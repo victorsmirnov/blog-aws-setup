@@ -6,16 +6,36 @@ import {AuroraCluster} from "./AuroraCluster";
 import {WebServer} from "./WebServer";
 import {WebServerSG} from "./WebServerSG";
 import {ARecord, PublicHostedZone, RecordTarget} from "@aws-cdk/aws-route53";
+import {WebLoadBalancerSG} from "./WebLoadBalancerSG";
+import {Certificate, CertificateValidation} from "@aws-cdk/aws-certificatemanager";
+import {WebLoadBalancer} from "./WebLoadBalancer";
+import {LoadBalancerTarget} from "@aws-cdk/aws-route53-targets";
 
 export class BlogStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps) {
         super(scope, id, props);
 
+        /**
+         * I have created hosted zone before and I do not want to recreate it because of all updates in DNS registrator.
+         * This how to import existing resource into stack. It is required to specify both zone ID and zone name.
+         */
+        const blogHostedZone = PublicHostedZone.fromHostedZoneAttributes(this, "HostedZone", {
+            hostedZoneId: "Z02825862QFAIGAAQX1SB",
+            zoneName: "victorsmirnov.blog",
+        });
+
+        const sslCertificate = new Certificate(this, "SslCertificate", {
+            domainName: "victorsmirnov.blog",
+            validation: CertificateValidation.fromDns(blogHostedZone),
+        });
+
         const key = new SshKey(this);
 
         const vpc = new BlogVpc(this);
 
-        const webServerSG = new WebServerSG(this, {vpc});
+        const loadBalancerSg = new WebLoadBalancerSG(this, {vpc});
+
+        const webServerSG = new WebServerSG(this, {loadBalancerSg, vpc});
 
         const webServer = new WebServer(this, {
             keyName: key.keyPairName,
@@ -23,15 +43,18 @@ export class BlogStack extends Stack {
             vpc,
         });
 
+        const webLoadBalancer = new WebLoadBalancer(this, {
+            certificateArn: sslCertificate.certificateArn,
+            securityGroup: loadBalancerSg,
+            vpc,
+            webServer,
+        });
+
         const cluster = new AuroraCluster(this, {vpc});
         cluster.connections.allowFrom(webServerSG, Port.tcp(cluster.clusterEndpoint.port), "Allow web server");
 
-        const blogHostedZone = PublicHostedZone.fromHostedZoneAttributes(this, "HostedZone", {
-            hostedZoneId: "Z02825862QFAIGAAQX1SB",
-            zoneName: "victorsmirnov.blog",
-        });
         new ARecord(this, "WebServerARecord", {
-            target: RecordTarget.fromIpAddresses(webServer.instancePublicIp),
+            target: RecordTarget.fromAlias(new LoadBalancerTarget(webLoadBalancer)),
             zone: blogHostedZone,
         });
 

@@ -8,6 +8,11 @@ export interface WebServerProps {
     vpc: IVpc;
 }
 
+/**
+ * EC2 instance running Ghost server and Nginx web server.
+ * 1. We place instance in public zone.
+ * 2. Security group allows incoming HTTP and SSH traffic and allows to connect to Aurora RDS.
+ */
 export class WebServer extends Instance {
     constructor(scope: Construct, props: WebServerProps) {
         super(scope, 'WebServer', {
