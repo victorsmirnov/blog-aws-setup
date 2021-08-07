@@ -1,11 +1,19 @@
-import {Instance, InstanceClass, InstanceSize, InstanceType, IVpc, MachineImage, SubnetType} from "@aws-cdk/aws-ec2";
+import {
+    Instance,
+    InstanceClass,
+    InstanceSize,
+    InstanceType,
+    IVpc,
+    MachineImage,
+    Port,
+    SecurityGroup,
+    SubnetType
+} from "@aws-cdk/aws-ec2";
 import {Construct} from "@aws-cdk/core";
-import {ISecurityGroup} from "@aws-cdk/aws-ec2/lib/security-group";
 
 export interface WebServerProps {
-    keyName: string;
-    securityGroup: ISecurityGroup;
-    vpc: IVpc;
+    readonly keyName: string;
+    readonly vpc: IVpc;
 }
 
 /**
@@ -28,9 +36,14 @@ export class WebServer extends Instance {
                 'eu-west-2': 'ami-08e9b1b7e7aff00e7',
                 'eu-west-3': 'ami-08a99b876ef148f77',
             }),
-            securityGroup: props.securityGroup,
+            securityGroup: new SecurityGroup(scope, 'WebServerSG', {
+                allowAllOutbound: true,
+                description: 'Allow SSH and HTTP access to web site instance',
+                vpc: props.vpc,
+            }),
             vpc: props.vpc,
             vpcSubnets: {subnetType: SubnetType.PUBLIC, onePerAz: true},
-        })
+        });
+        this.connections.allowFromAnyIpv4(Port.tcp(22), 'Allow SSH');
     }
 }

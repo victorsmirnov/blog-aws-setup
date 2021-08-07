@@ -3,7 +3,7 @@ import {AuroraCapacityUnit, Credentials, DatabaseClusterEngine, ServerlessCluste
 import {IVpc, SubnetType} from "@aws-cdk/aws-ec2";
 
 export interface AuroraClusterProps {
-    vpc: IVpc;
+    readonly vpc: IVpc;
 }
 
 /**

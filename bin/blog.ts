@@ -1,10 +1,13 @@
 #!/usr/bin/env node
-import 'source-map-support/register';
-import {App} from '@aws-cdk/core';
-import {BlogStack} from '../lib/BlogStack';
-import {Environment} from "@aws-cdk/core/lib/environment";
-
-const envIreland: Environment = {account: '463361892799', region: 'eu-west-1'};
+import "source-map-support/register";
+import {App} from "@aws-cdk/core";
+import {BlogStack} from "../lib/BlogStack";
+import {env} from "process";
 
 const app = new App();
-new BlogStack(app, 'BlogStack', {env: envIreland});
+new BlogStack(app, {
+    domainName: env.DOMAIN_NAME,
+    env: {account: env.AWS_ACCOUNT, region: env.AWS_REGION},
+    googleVerify: env.GOOGLE_VERIFY,
+    vpcCidr: env.VPC_CIDR,
+});
