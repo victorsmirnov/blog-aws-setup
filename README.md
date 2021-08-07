@@ -1,6 +1,6 @@
 # Infrastructure for victorsmirnov.blog
 
-The project builds AWS cloud for personal blog web site.
+The project builds AWS cloud for personal blog website.
 
 ## Notes
 

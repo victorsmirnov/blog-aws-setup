@@ -19,10 +19,12 @@
     "@aws-cdk/aws-route53": "*",
     "@aws-cdk/aws-route53-targets": "*",
     "@aws-cdk/core": "*",
+    "@types/joi": "^17.2.3",
     "@types/node": "*",
     "aws-cdk": "*",
     "cdk-ec2-key-pair": "*",
     "dotenv": "^10.0.0",
+    "joi": "^17.4.2",
     "source-map-support": "*",
     "typescript": "*"
   }
