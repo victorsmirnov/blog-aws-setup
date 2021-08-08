@@ -4,6 +4,7 @@ import {
     ApplicationLoadBalancer,
     ApplicationProtocol,
     ApplicationTargetGroup,
+    SslPolicy,
     TargetType
 } from "@aws-cdk/aws-elasticloadbalancingv2";
 import {IpTarget} from "@aws-cdk/aws-elasticloadbalancingv2-targets";
@@ -34,17 +35,8 @@ export class LoadBalancer extends ApplicationLoadBalancer {
             vpcSubnets: {subnetType: SubnetType.PUBLIC, onePerAz: true},
         });
 
-        this.connections.allowFromAnyIpv4(Port.tcp(80), "Allow HTTP");
         this.connections.allowFromAnyIpv4(Port.tcp(443), "Allow HTTPS");
-
-        webServer.connections.allowFrom(this, Port.tcp(80), "Allow HTTP from ALB");
         webServer.connections.allowFrom(this, Port.tcp(443), "Allow HTTPS from ALB");
-
-        /**
-         * Redirects HTTP port 80 to HTTPS port 443.
-         * It creates listener automatically, no target group is needed for the redirect.
-         */
-        this.addRedirect();
 
         const target = new ApplicationTargetGroup(scope, "WebServerTargetGroup", {
             port: 443,
@@ -60,6 +52,7 @@ export class LoadBalancer extends ApplicationLoadBalancer {
             open: true,
             port: 443,
             protocol: ApplicationProtocol.HTTPS,
+            sslPolicy: SslPolicy.FORWARD_SECRECY_TLS12,
         });
     }
 }

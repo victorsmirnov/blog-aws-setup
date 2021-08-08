@@ -4,10 +4,20 @@ import {SshKey} from "./SshKey";
 import {AuroraCluster} from "./AuroraCluster";
 import {WebServer} from "./WebServer";
 import {ARecord, PublicHostedZone, RecordTarget, TxtRecord} from "@aws-cdk/aws-route53";
-import {Certificate, CertificateValidation} from "@aws-cdk/aws-certificatemanager";
+import {Certificate, CertificateValidation, DnsValidatedCertificate} from "@aws-cdk/aws-certificatemanager";
 import {LoadBalancer} from "./LoadBalancer";
-import {LoadBalancerTarget} from "@aws-cdk/aws-route53-targets";
+import {CloudFrontTarget, LoadBalancerTarget} from "@aws-cdk/aws-route53-targets";
 import {Environment} from "@aws-cdk/core/lib/environment";
+import {
+    AllowedMethods,
+    CachePolicy,
+    Distribution,
+    OriginProtocolPolicy,
+    OriginRequestPolicy,
+    OriginSslPolicy,
+    ViewerProtocolPolicy
+} from "@aws-cdk/aws-cloudfront";
+import {HttpOrigin} from "@aws-cdk/aws-cloudfront-origins";
 
 export interface BlogStackProps {
     /**
@@ -38,13 +48,17 @@ export interface BlogStackProps {
 export class BlogStack extends Stack {
     public readonly auroraCluster: AuroraCluster;
 
+    public readonly cloudFrontCert: Certificate;
+
+    public readonly cloudFrontDist: Distribution;
+
     public readonly hostedZone: PublicHostedZone;
 
     public readonly loadBalancer: LoadBalancer;
 
     public readonly sshKey: SshKey;
 
-    public readonly sslCertificate: Certificate;
+    public readonly loadBalancerCert: Certificate;
 
     public readonly vpc: BlogVpc;
 
@@ -63,8 +77,9 @@ export class BlogStack extends Stack {
             });
         }
 
-        this.sslCertificate = new Certificate(this, "SslCertificate", {
-            domainName: domainName,
+        this.loadBalancerCert = new Certificate(this, "SslCertificate", {
+            domainName,
+            subjectAlternativeNames: [`srv.${domainName}`],
             validation: CertificateValidation.fromDns(this.hostedZone),
         });
 
@@ -78,7 +93,7 @@ export class BlogStack extends Stack {
         });
 
         this.loadBalancer = new LoadBalancer(this, {
-            certificateArn: this.sslCertificate.certificateArn,
+            certificateArn: this.loadBalancerCert.certificateArn,
             vpc: this.vpc,
             webServer: this.webServer,
         });
@@ -86,7 +101,33 @@ export class BlogStack extends Stack {
         this.auroraCluster = new AuroraCluster(this, {vpc: this.vpc});
         this.auroraCluster.connections.allowDefaultPortFrom(this.webServer, "Allow web server access");
 
+        this.cloudFrontCert = new DnsValidatedCertificate(this, "CloudFrontCert", {
+            domainName,
+            hostedZone: this.hostedZone,
+            region: "us-east-1",
+        });
+
+        this.cloudFrontDist = new Distribution(this, "Distribution", {
+            certificate: this.cloudFrontCert,
+            defaultBehavior: {
+                allowedMethods: AllowedMethods.ALLOW_ALL,
+                cachePolicy: CachePolicy.CACHING_OPTIMIZED,
+                origin: new HttpOrigin(`srv.${domainName}`, {
+                    originSslProtocols: [OriginSslPolicy.TLS_V1_2],
+                    protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
+                }),
+                originRequestPolicy: OriginRequestPolicy.USER_AGENT_REFERER_HEADERS,
+                viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            },
+            domainNames: [domainName],
+        });
+
         new ARecord(this, "WebServerARecord", {
+            target: RecordTarget.fromAlias(new CloudFrontTarget(this.cloudFrontDist)),
+            zone: this.hostedZone,
+        });
+        new ARecord(this, "LoadBalancerARecord", {
+            recordName: "srv",
             target: RecordTarget.fromAlias(new LoadBalancerTarget(this.loadBalancer)),
             zone: this.hostedZone,
         });
