@@ -116,7 +116,7 @@ export class BlogStack extends Stack {
                     originSslProtocols: [OriginSslPolicy.TLS_V1_2],
                     protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
                 }),
-                originRequestPolicy: OriginRequestPolicy.USER_AGENT_REFERER_HEADERS,
+                originRequestPolicy: OriginRequestPolicy.ALL_VIEWER,
                 viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
             },
             domainNames: [domainName],
