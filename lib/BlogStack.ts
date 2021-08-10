@@ -8,16 +8,8 @@ import {Certificate, CertificateValidation, DnsValidatedCertificate} from "@aws-
 import {LoadBalancer} from "./LoadBalancer";
 import {CloudFrontTarget, LoadBalancerTarget} from "@aws-cdk/aws-route53-targets";
 import {Environment} from "@aws-cdk/core/lib/environment";
-import {
-    AllowedMethods,
-    CachePolicy,
-    Distribution,
-    OriginProtocolPolicy,
-    OriginRequestPolicy,
-    OriginSslPolicy,
-    ViewerProtocolPolicy
-} from "@aws-cdk/aws-cloudfront";
-import {HttpOrigin} from "@aws-cdk/aws-cloudfront-origins";
+import {Distribution} from "@aws-cdk/aws-cloudfront";
+import {CloudFrontDist} from "./CloudFrontDist";
 
 export interface BlogStackProps {
     /**
@@ -46,6 +38,8 @@ export interface BlogStackProps {
  * Define blog stack.
  */
 export class BlogStack extends Stack {
+    public readonly albDomainName: string;
+
     public readonly auroraCluster: AuroraCluster;
 
     public readonly cloudFrontCert: Certificate;
@@ -77,9 +71,10 @@ export class BlogStack extends Stack {
             });
         }
 
+        this.albDomainName = `srv.${domainName}`;
         this.loadBalancerCert = new Certificate(this, "SslCertificate", {
             domainName,
-            subjectAlternativeNames: [`srv.${domainName}`],
+            subjectAlternativeNames: [this.albDomainName],
             validation: CertificateValidation.fromDns(this.hostedZone),
         });
 
@@ -107,19 +102,10 @@ export class BlogStack extends Stack {
             region: "us-east-1",
         });
 
-        this.cloudFrontDist = new Distribution(this, "Distribution", {
+        this.cloudFrontDist = new CloudFrontDist(this, {
+            albDomainName: this.albDomainName,
             certificate: this.cloudFrontCert,
-            defaultBehavior: {
-                allowedMethods: AllowedMethods.ALLOW_ALL,
-                cachePolicy: CachePolicy.CACHING_OPTIMIZED,
-                origin: new HttpOrigin(`srv.${domainName}`, {
-                    originSslProtocols: [OriginSslPolicy.TLS_V1_2],
-                    protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
-                }),
-                originRequestPolicy: OriginRequestPolicy.ALL_VIEWER,
-                viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-            },
-            domainNames: [domainName],
+            domainName,
         });
 
         new ARecord(this, "WebServerARecord", {
