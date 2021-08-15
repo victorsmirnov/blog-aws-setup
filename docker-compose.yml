@@ -16,6 +16,8 @@ services:
     ports:
       - "8080:2368"
     restart: always
+    volumes:
+      - ./ghost/content/themes/alto:/var/lib/ghost/content/themes/alto
 
   db:
     container_name: db
