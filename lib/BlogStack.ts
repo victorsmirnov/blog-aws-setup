@@ -8,8 +8,8 @@ import {Certificate, CertificateValidation, DnsValidatedCertificate} from "@aws-
 import {LoadBalancer} from "./LoadBalancer";
 import {CloudFrontTarget, LoadBalancerTarget} from "@aws-cdk/aws-route53-targets";
 import {Environment} from "@aws-cdk/core/lib/environment";
-import {Distribution} from "@aws-cdk/aws-cloudfront";
 import {CloudFrontDist} from "./CloudFrontDist";
+import {Monitoring} from "./Monitoring";
 
 export interface BlogStackProps {
     /**
@@ -44,11 +44,13 @@ export class BlogStack extends Stack {
 
     public readonly cloudFrontCert: Certificate;
 
-    public readonly cloudFrontDist: Distribution;
+    public readonly cloudFrontDist: CloudFrontDist;
 
     public readonly hostedZone: PublicHostedZone;
 
     public readonly loadBalancer: LoadBalancer;
+
+    public readonly monitoring: Monitoring;
 
     public readonly sshKey: SshKey;
 
@@ -116,6 +118,12 @@ export class BlogStack extends Stack {
             recordName: "srv",
             target: RecordTarget.fromAlias(new LoadBalancerTarget(this.loadBalancer)),
             zone: this.hostedZone,
+        });
+
+        this.monitoring = new Monitoring(this, {
+            cloudFrontDist: this.cloudFrontDist,
+            loadBalancer: this.loadBalancer,
+            webServer: this.webServer,
         });
 
         new CfnOutput(this, "IP Address", {value: this.webServer.instancePublicIp});
