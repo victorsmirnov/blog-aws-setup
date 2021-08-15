@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  ghost:
+    container_name: ghost
+    environment:
+      # see https://ghost.org/docs/config/#configuration-options
+      database__client: mysql
+      database__connection__host: db
+      database__connection__user: root
+      database__connection__password: example
+      database__connection__database: ghost
+      url: http://localhost:8080
+      NODE_ENV: development
+    image: ghost:4.11.0
+    ports:
+      - "8080:2368"
+    restart: always
+
+  db:
+    container_name: db
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+    image: mysql:5.7
+    ports:
+      - "3306:3306"
+    restart: always
+    volumes:
+      - mysql:/var/lib/mysql
+
+volumes:
+  mysql:
+    driver: local
