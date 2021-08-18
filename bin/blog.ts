@@ -15,7 +15,6 @@ new BlogStack(app, {
     vpcCidr: env.VPC_CIDR,
 });
 
-
 /**
  * Validate environment variable. Print an error message and throws an exception in case of failure.
  */

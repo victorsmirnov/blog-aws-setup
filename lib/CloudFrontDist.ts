@@ -8,17 +8,56 @@ import {
     ViewerProtocolPolicy
 } from "@aws-cdk/aws-cloudfront";
 import {HttpOrigin} from "@aws-cdk/aws-cloudfront-origins";
-import {ICertificate} from "@aws-cdk/aws-certificatemanager/lib/certificate";
 import {Construct} from "@aws-cdk/core";
 import {Metric, Unit} from "@aws-cdk/aws-cloudwatch";
 import {MetricProps} from "@aws-cdk/aws-cloudwatch/lib/metric";
+import {DnsValidatedCertificate} from "@aws-cdk/aws-certificatemanager";
+import {PublicHostedZone} from "@aws-cdk/aws-route53";
 
 export interface CloudFrontDistProps {
     readonly albDomainName: string;
-    readonly certificate: ICertificate;
     readonly domainName: string;
+    readonly hostedZone: PublicHostedZone;
 }
 
+/**
+ * Create CloudFront distribution (and certificate).
+ * @param scope
+ * @param albDomainName
+ * @param domainName
+ * @param hostedZone
+ */
+export function cloudFrontDist(scope: Construct, {
+    albDomainName,
+    domainName,
+    hostedZone
+}: CloudFrontDistProps): CloudFrontDist {
+
+    const certificate = new DnsValidatedCertificate(scope, "CloudFrontCert", {
+        domainName,
+        hostedZone: hostedZone,
+        region: "us-east-1",
+    });
+
+    return new CloudFrontDist(scope, "Distribution", {
+        certificate,
+        defaultBehavior: {
+            allowedMethods: AllowedMethods.ALLOW_ALL,
+            cachePolicy: CachePolicy.CACHING_OPTIMIZED,
+            origin: new HttpOrigin(albDomainName, {
+                originSslProtocols: [OriginSslPolicy.TLS_V1_2],
+                protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
+            }),
+            originRequestPolicy: OriginRequestPolicy.ALL_VIEWER,
+            viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        },
+        domainNames: [domainName],
+    });
+}
+
+/**
+ * Names for error rate CloudFront metric.
+ */
 export const enum ErrorRate {
     Error4xx = "ErrorRate4xx",
     Error401 = "401ErrorRate",
@@ -31,24 +70,10 @@ export const enum ErrorRate {
     Total = "TotalErrorRate",
 }
 
+/**
+ * Extend Distribution with helper methods to define CloudWatch metrics.
+ */
 export class CloudFrontDist extends Distribution {
-    constructor(scope: Construct, {albDomainName, certificate, domainName}: CloudFrontDistProps) {
-        super(scope, "Distribution", {
-            certificate,
-            defaultBehavior: {
-                allowedMethods: AllowedMethods.ALLOW_ALL,
-                cachePolicy: CachePolicy.CACHING_OPTIMIZED,
-                origin: new HttpOrigin(albDomainName, {
-                    originSslProtocols: [OriginSslPolicy.TLS_V1_2],
-                    protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
-                }),
-                originRequestPolicy: OriginRequestPolicy.ALL_VIEWER,
-                viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-            },
-            domainNames: [domainName],
-        });
-    }
-
     /**
      * CloudFront metric, see
      * https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/programming-cloudwatch-metrics.html

@@ -1,15 +1,19 @@
 import {CfnOutput, Construct, Stack} from "@aws-cdk/core";
-import {BlogVpc} from "./BlogVpc";
-import {SshKey} from "./SshKey";
-import {AuroraCluster} from "./AuroraCluster";
-import {WebServer} from "./WebServer";
+import {blogVpc} from "./BlogVpc";
+import {sshKey} from "./SshKey";
+import {auroraCluster} from "./AuroraCluster";
+import {webServer} from "./WebServer";
 import {ARecord, PublicHostedZone, RecordTarget, TxtRecord} from "@aws-cdk/aws-route53";
-import {Certificate, CertificateValidation, DnsValidatedCertificate} from "@aws-cdk/aws-certificatemanager";
-import {LoadBalancer} from "./LoadBalancer";
+import {loadBalancer} from "./LoadBalancer";
 import {CloudFrontTarget, LoadBalancerTarget} from "@aws-cdk/aws-route53-targets";
 import {Environment} from "@aws-cdk/core/lib/environment";
-import {CloudFrontDist} from "./CloudFrontDist";
-import {Monitoring} from "./Monitoring";
+import {cloudFrontDist, CloudFrontDist} from "./CloudFrontDist";
+import {monitoringDashboard} from "./Monitoring";
+import {ServerlessCluster} from "@aws-cdk/aws-rds";
+import {Instance, Vpc} from "@aws-cdk/aws-ec2";
+import {ApplicationLoadBalancer} from "@aws-cdk/aws-elasticloadbalancingv2";
+import {Dashboard} from "@aws-cdk/aws-cloudwatch";
+import {KeyPair} from "cdk-ec2-key-pair";
 
 export interface BlogStackProps {
     /**
@@ -37,102 +41,88 @@ export interface BlogStackProps {
 /**
  * Define blog stack.
  */
-export class BlogStack extends Stack {
-    public readonly albDomainName: string;
+export class BlogStack {
+    public readonly stack: Stack;
 
-    public readonly auroraCluster: AuroraCluster;
-
-    public readonly cloudFrontCert: Certificate;
+    public readonly auroraCluster: ServerlessCluster;
 
     public readonly cloudFrontDist: CloudFrontDist;
 
     public readonly hostedZone: PublicHostedZone;
 
-    public readonly loadBalancer: LoadBalancer;
+    public readonly loadBalancer: ApplicationLoadBalancer;
 
-    public readonly monitoring: Monitoring;
+    public readonly monitoring: Dashboard;
 
-    public readonly sshKey: SshKey;
+    public readonly sshKey: KeyPair;
 
-    public readonly loadBalancerCert: Certificate;
+    public readonly vpc: Vpc;
 
-    public readonly vpc: BlogVpc;
-
-    public readonly webServer: WebServer;
+    public readonly webServer: Instance;
 
     constructor(scope: Construct, {domainName, env, googleVerify, vpcCidr}: BlogStackProps) {
-        super(scope, "BlogStack", {env});
+        this.stack = new Stack(scope, "BlogStack", {env});
 
-        this.hostedZone = new PublicHostedZone(this, "HostedZone", {
+        this.hostedZone = new PublicHostedZone(this.stack, "HostedZone", {
             zoneName: domainName,
         })
         if (googleVerify !== undefined) {
-            new TxtRecord(this, "GoogleVerification", {
+            new TxtRecord(this.stack, "GoogleVerification", {
                 values: [googleVerify],
                 zone: this.hostedZone,
             });
         }
 
-        this.albDomainName = `srv.${domainName}`;
-        this.loadBalancerCert = new Certificate(this, "SslCertificate", {
-            domainName,
-            subjectAlternativeNames: [this.albDomainName],
-            validation: CertificateValidation.fromDns(this.hostedZone),
-        });
+        this.sshKey = sshKey(this.stack);
 
-        this.sshKey = new SshKey(this);
+        this.vpc = blogVpc(this.stack, {cidr: vpcCidr});
 
-        this.vpc = new BlogVpc(this, {cidr: vpcCidr});
-
-        this.webServer = new WebServer(this, {
+        this.webServer = webServer(this.stack, {
             keyName: this.sshKey.keyPairName,
             vpc: this.vpc,
         });
 
-        this.loadBalancer = new LoadBalancer(this, {
-            certificateArn: this.loadBalancerCert.certificateArn,
+        const albDomainName = `srv.${domainName}`;
+        this.loadBalancer = loadBalancer(this.stack, {
+            albDomainName: albDomainName,
+            domainName,
+            hostedZone: this.hostedZone,
             vpc: this.vpc,
             webServer: this.webServer,
         });
 
-        this.auroraCluster = new AuroraCluster(this, {vpc: this.vpc});
+        this.auroraCluster = auroraCluster(this.stack, {vpc: this.vpc});
         this.auroraCluster.connections.allowDefaultPortFrom(this.webServer, "Allow web server access");
 
-        this.cloudFrontCert = new DnsValidatedCertificate(this, "CloudFrontCert", {
+        this.cloudFrontDist = cloudFrontDist(this.stack, {
+            albDomainName: albDomainName,
             domainName,
             hostedZone: this.hostedZone,
-            region: "us-east-1",
         });
 
-        this.cloudFrontDist = new CloudFrontDist(this, {
-            albDomainName: this.albDomainName,
-            certificate: this.cloudFrontCert,
-            domainName,
-        });
-
-        new ARecord(this, "WebServerARecord", {
+        new ARecord(this.stack, "WebServerARecord", {
             target: RecordTarget.fromAlias(new CloudFrontTarget(this.cloudFrontDist)),
             zone: this.hostedZone,
         });
-        new ARecord(this, "LoadBalancerARecord", {
+        new ARecord(this.stack, "LoadBalancerARecord", {
             recordName: "srv",
             target: RecordTarget.fromAlias(new LoadBalancerTarget(this.loadBalancer)),
             zone: this.hostedZone,
         });
 
-        this.monitoring = new Monitoring(this, {
+        this.monitoring = monitoringDashboard(this.stack, {
             cloudFrontDist: this.cloudFrontDist,
             loadBalancer: this.loadBalancer,
             webServer: this.webServer,
         });
 
-        new CfnOutput(this, "IP Address", {value: this.webServer.instancePublicIp});
-        new CfnOutput(this, "Key Name", {value: this.sshKey.keyPairName})
-        new CfnOutput(this, "Download Key Command", {
+        new CfnOutput(this.stack, "IP Address", {value: this.webServer.instancePublicIp});
+        new CfnOutput(this.stack, "Key Name", {value: this.sshKey.keyPairName})
+        new CfnOutput(this.stack, "Download Key Command", {
             value: "aws secretsmanager get-secret-value --secret-id ec2-ssh-key/blog-key/private " +
                 "--query SecretString --output text > blog-key.pem && chmod 400 blog-key.pem"
         })
-        new CfnOutput(this, "ssh command", {
+        new CfnOutput(this.stack, "ssh command", {
             value: "ssh -i blog-key.pem -o IdentitiesOnly=yes ubuntu@" + this.webServer.instancePublicIp
         })
     }

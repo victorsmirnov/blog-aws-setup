@@ -2,13 +2,13 @@ import {Construct} from "@aws-cdk/core";
 import {KeyPair} from "cdk-ec2-key-pair";
 
 /**
- * We plan to use the key for our EC2 instance running Ghost server.
+ * SSH key for the web server (EC2 instance).
+ * Key is created as a custom resource using Lambda function. The SSH private key is saved as a secret
+ * and can downloaded at any time.
  */
-export class SshKey extends KeyPair {
-    constructor(scope: Construct) {
-        super(scope, "KeyPair", {
-            name: "blog-key",
-            description: "Key Pair created with CDK Deployment",
-        });
-    }
+export function sshKey(scope: Construct): KeyPair {
+    return new KeyPair(scope, "KeyPair", {
+        name: "blog-key",
+        description: "Key Pair created with CDK Deployment",
+    });
 }
