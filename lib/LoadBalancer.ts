@@ -1,14 +1,23 @@
-import {Instance, IVpc, Port, SecurityGroup, SubnetType} from "@aws-cdk/aws-ec2";
+import {
+    Instance,
+    IVpc,
+    Port,
+    SecurityGroup,
+    SubnetType,
+} from "@aws-cdk/aws-ec2";
 import {Construct} from "@aws-cdk/core";
 import {
     ApplicationLoadBalancer,
     ApplicationProtocol,
     ApplicationTargetGroup,
     SslPolicy,
-    TargetType
+    TargetType,
 } from "@aws-cdk/aws-elasticloadbalancingv2";
 import {IpTarget} from "@aws-cdk/aws-elasticloadbalancingv2-targets";
-import {Certificate, CertificateValidation} from "@aws-cdk/aws-certificatemanager";
+import {
+    Certificate,
+    CertificateValidation,
+} from "@aws-cdk/aws-certificatemanager";
 import {PublicHostedZone} from "@aws-cdk/aws-route53";
 
 export interface LoadBalancerProps {
@@ -28,14 +37,10 @@ export interface LoadBalancerProps {
  * 1. HTTP listener should redirect to HTTPS.
  * 2. HTTPS listener should forward to our web server.
  */
-export function loadBalancer(scope: Construct, {
-    albDomainName,
-    hostedZone,
-    domainName,
-    vpc,
-    webServer
-}: LoadBalancerProps): ApplicationLoadBalancer {
-
+export function loadBalancer(
+    scope: Construct,
+    {albDomainName, hostedZone, domainName, vpc, webServer}: LoadBalancerProps,
+): ApplicationLoadBalancer {
     const loadBalancerCert = new Certificate(scope, "SslCertificate", {
         domainName,
         subjectAlternativeNames: [albDomainName],
@@ -59,7 +64,13 @@ export function loadBalancer(scope: Construct, {
     const target = new ApplicationTargetGroup(scope, "WebServerTargetGroup", {
         port: 443,
         protocol: ApplicationProtocol.HTTPS,
-        targets: [new IpTarget(webServer.instancePrivateIp, 443, webServer.instanceAvailabilityZone)],
+        targets: [
+            new IpTarget(
+                webServer.instancePrivateIp,
+                443,
+                webServer.instanceAvailabilityZone,
+            ),
+        ],
         targetType: TargetType.IP,
         vpc,
     });

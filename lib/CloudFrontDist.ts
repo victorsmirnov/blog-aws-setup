@@ -5,7 +5,7 @@ import {
     OriginProtocolPolicy,
     OriginRequestPolicy,
     OriginSslPolicy,
-    ViewerProtocolPolicy
+    ViewerProtocolPolicy,
 } from "@aws-cdk/aws-cloudfront";
 import {HttpOrigin} from "@aws-cdk/aws-cloudfront-origins";
 import {Construct} from "@aws-cdk/core";
@@ -27,12 +27,10 @@ export interface CloudFrontDistProps {
  * @param domainName
  * @param hostedZone
  */
-export function cloudFrontDist(scope: Construct, {
-    albDomainName,
-    domainName,
-    hostedZone
-}: CloudFrontDistProps): CloudFrontDist {
-
+export function cloudFrontDist(
+    scope: Construct,
+    {albDomainName, domainName, hostedZone}: CloudFrontDistProps,
+): CloudFrontDist {
     const certificate = new DnsValidatedCertificate(scope, "CloudFrontCert", {
         domainName,
         hostedZone: hostedZone,
@@ -95,7 +93,10 @@ export class CloudFrontDist extends Distribution {
      * @param metricName
      * @param props
      */
-    public metricErrorRate(metricName: ErrorRate, props?: Partial<MetricProps>): Metric {
+    public metricErrorRate(
+        metricName: ErrorRate,
+        props?: Partial<MetricProps>,
+    ): Metric {
         return this.metric(metricName, {
             statistic: "avg",
             unit: Unit.PERCENT,

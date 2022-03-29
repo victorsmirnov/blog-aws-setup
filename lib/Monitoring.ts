@@ -1,6 +1,9 @@
 import {Dashboard, GraphWidget} from "@aws-cdk/aws-cloudwatch";
 import {Construct} from "@aws-cdk/core";
-import {HttpCodeElb, HttpCodeTarget} from "@aws-cdk/aws-elasticloadbalancingv2/lib/alb/application-load-balancer";
+import {
+    HttpCodeElb,
+    HttpCodeTarget,
+} from "@aws-cdk/aws-elasticloadbalancingv2/lib/alb/application-load-balancer";
 import {CloudFrontDist, ErrorRate} from "./CloudFrontDist";
 import {ApplicationLoadBalancer} from "@aws-cdk/aws-elasticloadbalancingv2";
 import {Instance} from "@aws-cdk/aws-ec2";
@@ -13,7 +16,10 @@ export interface MonitoringProps {
     readonly webServer: Instance;
 }
 
-export function monitoringDashboard(scope: Construct, {cloudFrontDist, loadBalancer}: MonitoringProps): Dashboard {
+export function monitoringDashboard(
+    scope: Construct,
+    {cloudFrontDist, loadBalancer}: MonitoringProps,
+): Dashboard {
     return new Dashboard(scope, "MonitoringDashboard", {
         dashboardName: "blog-monitoring",
         widgets: [
@@ -24,8 +30,8 @@ export function monitoringDashboard(scope: Construct, {cloudFrontDist, loadBalan
             [
                 targetCodes(loadBalancer),
                 elbCodes(loadBalancer),
-                targetTime(loadBalancer)
-            ]
+                targetTime(loadBalancer),
+            ],
         ],
     });
 }
@@ -45,9 +51,7 @@ function distributionErrors(cloudFrontDist: CloudFrontDist): GraphWidget {
 function distributionRequests(cloudFrontDist: CloudFrontDist): GraphWidget {
     return new GraphWidget({
         height: 8,
-        right: [
-            cloudFrontDist.metricRequests(),
-        ],
+        right: [cloudFrontDist.metricRequests()],
         title: "CloudFront Requests",
         width: 12,
     });

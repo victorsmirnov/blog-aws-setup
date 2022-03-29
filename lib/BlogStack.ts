@@ -3,9 +3,17 @@ import {blogVpc} from "./BlogVpc";
 import {sshKey} from "./SshKey";
 import {auroraCluster} from "./AuroraCluster";
 import {webServer} from "./WebServer";
-import {ARecord, PublicHostedZone, RecordTarget, TxtRecord} from "@aws-cdk/aws-route53";
+import {
+    ARecord,
+    PublicHostedZone,
+    RecordTarget,
+    TxtRecord,
+} from "@aws-cdk/aws-route53";
 import {loadBalancer} from "./LoadBalancer";
-import {CloudFrontTarget, LoadBalancerTarget} from "@aws-cdk/aws-route53-targets";
+import {
+    CloudFrontTarget,
+    LoadBalancerTarget,
+} from "@aws-cdk/aws-route53-targets";
 import {Environment} from "@aws-cdk/core/lib/environment";
 import {cloudFrontDist, CloudFrontDist} from "./CloudFrontDist";
 import {monitoringDashboard} from "./Monitoring";
@@ -60,12 +68,15 @@ export class BlogStack {
 
     public readonly webServer: Instance;
 
-    constructor(scope: Construct, {domainName, env, googleVerify, vpcCidr}: BlogStackProps) {
+    constructor(
+        scope: Construct,
+        {domainName, env, googleVerify, vpcCidr}: BlogStackProps,
+    ) {
         this.stack = new Stack(scope, "BlogStack", {env});
 
         this.hostedZone = new PublicHostedZone(this.stack, "HostedZone", {
             zoneName: domainName,
-        })
+        });
         if (googleVerify !== undefined) {
             new TxtRecord(this.stack, "GoogleVerification", {
                 values: [googleVerify],
@@ -92,7 +103,10 @@ export class BlogStack {
         });
 
         this.auroraCluster = auroraCluster(this.stack, {vpc: this.vpc});
-        this.auroraCluster.connections.allowDefaultPortFrom(this.webServer, "Allow web server access");
+        this.auroraCluster.connections.allowDefaultPortFrom(
+            this.webServer,
+            "Allow web server access",
+        );
 
         this.cloudFrontDist = cloudFrontDist(this.stack, {
             albDomainName: albDomainName,
@@ -101,12 +115,16 @@ export class BlogStack {
         });
 
         new ARecord(this.stack, "WebServerARecord", {
-            target: RecordTarget.fromAlias(new CloudFrontTarget(this.cloudFrontDist)),
+            target: RecordTarget.fromAlias(
+                new CloudFrontTarget(this.cloudFrontDist),
+            ),
             zone: this.hostedZone,
         });
         new ARecord(this.stack, "LoadBalancerARecord", {
             recordName: "srv",
-            target: RecordTarget.fromAlias(new LoadBalancerTarget(this.loadBalancer)),
+            target: RecordTarget.fromAlias(
+                new LoadBalancerTarget(this.loadBalancer),
+            ),
             zone: this.hostedZone,
         });
 
@@ -116,14 +134,19 @@ export class BlogStack {
             webServer: this.webServer,
         });
 
-        new CfnOutput(this.stack, "IP Address", {value: this.webServer.instancePublicIp});
-        new CfnOutput(this.stack, "Key Name", {value: this.sshKey.keyPairName})
+        new CfnOutput(this.stack, "IP Address", {
+            value: this.webServer.instancePublicIp,
+        });
+        new CfnOutput(this.stack, "Key Name", {value: this.sshKey.keyPairName});
         new CfnOutput(this.stack, "Download Key Command", {
-            value: "aws secretsmanager get-secret-value --secret-id ec2-ssh-key/blog-key/private " +
-                "--query SecretString --output text > blog-key.pem && chmod 400 blog-key.pem"
-        })
+            value:
+                "aws secretsmanager get-secret-value --secret-id ec2-ssh-key/blog-key/private " +
+                "--query SecretString --output text > blog-key.pem && chmod 400 blog-key.pem",
+        });
         new CfnOutput(this.stack, "ssh command", {
-            value: "ssh -i blog-key.pem -o IdentitiesOnly=yes ubuntu@" + this.webServer.instancePublicIp
-        })
+            value:
+                "ssh -i blog-key.pem -o IdentitiesOnly=yes ubuntu@" +
+                this.webServer.instancePublicIp,
+        });
     }
 }
