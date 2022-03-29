@@ -28,7 +28,6 @@
         "@types/joi": "^17.2.3",
         "@types/node": "^16.4.13",
         "aws-cdk": "1.117.0",
-        "cdk-ec2-key-pair": "2.2.1",
         "dotenv": "^10.0.0",
         "joi": "^17.4.2",
         "source-map-support": "^0.5.19",

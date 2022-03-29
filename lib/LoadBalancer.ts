@@ -21,15 +21,13 @@ import {
 import {PublicHostedZone} from "@aws-cdk/aws-route53";
 
 export interface LoadBalancerProps {
-    albDomainName: string;
-
-    domainName: string;
+    readonly domainName: string;
 
     readonly hostedZone: PublicHostedZone;
 
-    vpc: IVpc;
+    readonly vpc: IVpc;
 
-    webServer: Instance;
+    readonly webServer: Instance;
 }
 
 /**
@@ -39,11 +37,10 @@ export interface LoadBalancerProps {
  */
 export function loadBalancer(
     scope: Construct,
-    {albDomainName, hostedZone, domainName, vpc, webServer}: LoadBalancerProps,
+    {domainName, hostedZone, vpc, webServer}: LoadBalancerProps,
 ): ApplicationLoadBalancer {
     const loadBalancerCert = new Certificate(scope, "SslCertificate", {
         domainName,
-        subjectAlternativeNames: [albDomainName],
         validation: CertificateValidation.fromDns(hostedZone),
     });
 
@@ -59,20 +56,32 @@ export function loadBalancer(
     });
 
     alb.connections.allowFromAnyIpv4(Port.tcp(443), "Allow HTTPS");
-    webServer.connections.allowFrom(alb, Port.tcp(443), "Allow HTTPS from ALB");
+    webServer.connections.allowFrom(
+        alb,
+        Port.tcp(2369),
+        "Allow Ghost connection from ALB",
+    );
 
     const target = new ApplicationTargetGroup(scope, "WebServerTargetGroup", {
-        port: 443,
-        protocol: ApplicationProtocol.HTTPS,
+        port: 2369,
+        protocol: ApplicationProtocol.HTTP,
         targets: [
             new IpTarget(
                 webServer.instancePrivateIp,
-                443,
+                2369,
                 webServer.instanceAvailabilityZone,
             ),
         ],
         targetType: TargetType.IP,
         vpc,
+    });
+
+    target.configureHealthCheck({
+        // Seems like we do not have health check URL yet.
+        // https://github.com/TryGhost/Ghost/issues/11181
+        // https://github.com/TryGhost/Ghost/pull/13117
+        healthyHttpCodes: "200,301",
+        path: "/health",
     });
 
     alb.addListener("HttpsListener", {

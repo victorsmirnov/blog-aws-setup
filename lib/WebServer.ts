@@ -12,19 +12,17 @@ import {
 import {Construct} from "@aws-cdk/core";
 
 export interface WebServerProps {
-    readonly keyName: string;
     readonly vpc: IVpc;
 }
 
 /**
  * EC2 instance running Ghost server and Nginx web server.
  * 1. We place instance in public zone.
- * 2. Security group allows incoming HTTP and SSH traffic and allows to connect to Aurora RDS.
+ * 2. Security group allows incoming HTTP traffic to the Ghost service and allows to connect to Aurora RDS.
  */
 export function webServer(scope: Construct, props: WebServerProps): Instance {
     const instance = new Instance(scope, "WebServer", {
         instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO),
-        keyName: props.keyName,
         machineImage: MachineImage.genericLinux({
             // See https://cloud-images.ubuntu.com/locator/ec2/
             // cpuType: AmazonLinuxCpuType.ARM_64
@@ -40,5 +38,6 @@ export function webServer(scope: Construct, props: WebServerProps): Instance {
         vpcSubnets: {subnetType: SubnetType.PUBLIC, onePerAz: true},
     });
     instance.connections.allowFromAnyIpv4(Port.tcp(22), "Allow SSH");
+
     return instance;
 }
