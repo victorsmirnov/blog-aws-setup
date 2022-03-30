@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import {App} from "@aws-cdk/core";
 import {BlogStack} from "./BlogStack.js";
 import {env} from "process";
 import Joi from "joi";
+import {App} from "aws-cdk-lib";
 
 validateEnvironment();
 

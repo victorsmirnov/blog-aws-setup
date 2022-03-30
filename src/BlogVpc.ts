@@ -1,5 +1,5 @@
-import {SubnetType, Vpc} from "@aws-cdk/aws-ec2";
-import {Construct} from "@aws-cdk/core";
+import {Construct} from "constructs";
+import {SubnetType, Vpc} from "aws-cdk-lib/aws-ec2";
 
 export interface BlogVpcProps {
     readonly cidr: string;
@@ -26,7 +26,7 @@ export function blogVpc(scope: Construct, {cidr}: BlogVpcProps): Vpc {
             {
                 cidrMask: 20,
                 name: "Private (isolated)",
-                subnetType: SubnetType.ISOLATED,
+                subnetType: SubnetType.PRIVATE_ISOLATED,
             },
         ],
     });

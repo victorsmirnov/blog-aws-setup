@@ -1,24 +1,24 @@
+import {PublicHostedZone} from "aws-cdk-lib/aws-route53";
 import {
     Instance,
     IVpc,
     Port,
     SecurityGroup,
     SubnetType,
-} from "@aws-cdk/aws-ec2";
-import {Construct} from "@aws-cdk/core";
+} from "aws-cdk-lib/aws-ec2";
+import {Construct} from "constructs";
 import {
     ApplicationLoadBalancer,
     ApplicationProtocol,
     ApplicationTargetGroup,
     SslPolicy,
     TargetType,
-} from "@aws-cdk/aws-elasticloadbalancingv2";
-import {IpTarget} from "@aws-cdk/aws-elasticloadbalancingv2-targets";
+} from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import {
     Certificate,
     CertificateValidation,
-} from "@aws-cdk/aws-certificatemanager";
-import {PublicHostedZone} from "@aws-cdk/aws-route53";
+} from "aws-cdk-lib/aws-certificatemanager";
+import {IpTarget} from "aws-cdk-lib/aws-elasticloadbalancingv2-targets";
 
 export interface LoadBalancerProps {
     readonly domainName: string;

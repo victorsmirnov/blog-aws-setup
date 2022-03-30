@@ -1,3 +1,4 @@
+import {Construct} from "constructs";
 import {
     Instance,
     InstanceClass,
@@ -8,8 +9,7 @@ import {
     Port,
     SecurityGroup,
     SubnetType,
-} from "@aws-cdk/aws-ec2";
-import {Construct} from "@aws-cdk/core";
+} from "aws-cdk-lib/aws-ec2";
 
 export interface WebServerProps {
     readonly vpc: IVpc;

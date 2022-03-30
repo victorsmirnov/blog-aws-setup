@@ -1,3 +1,6 @@
+import {PublicHostedZone} from "aws-cdk-lib/aws-route53";
+import {Construct} from "constructs";
+import {DnsValidatedCertificate} from "aws-cdk-lib/aws-certificatemanager";
 import {
     AllowedMethods,
     CachePolicy,
@@ -6,13 +9,9 @@ import {
     OriginRequestPolicy,
     OriginSslPolicy,
     ViewerProtocolPolicy,
-} from "@aws-cdk/aws-cloudfront";
-import {HttpOrigin} from "@aws-cdk/aws-cloudfront-origins";
-import {Construct} from "@aws-cdk/core";
-import {Metric, Unit} from "@aws-cdk/aws-cloudwatch";
-import {MetricProps} from "@aws-cdk/aws-cloudwatch/lib/metric";
-import {DnsValidatedCertificate} from "@aws-cdk/aws-certificatemanager";
-import {PublicHostedZone} from "@aws-cdk/aws-route53";
+} from "aws-cdk-lib/aws-cloudfront";
+import {HttpOrigin} from "aws-cdk-lib/aws-cloudfront-origins";
+import {Metric, MetricProps, Unit} from "aws-cdk-lib/aws-cloudwatch";
 
 export interface CloudFrontDistProps {
     readonly albDomainName: string;
@@ -80,7 +79,10 @@ export class CloudFrontDist extends Distribution {
      */
     public metric(metricName: string, props?: Partial<MetricProps>): Metric {
         return new Metric({
-            dimensions: {DistributionId: this.distributionId, Region: "Global"},
+            dimensionsMap: {
+                DistributionId: this.distributionId,
+                Region: "Global",
+            },
             metricName,
             namespace: "AWS/CloudFront",
             region: "us-east-1",

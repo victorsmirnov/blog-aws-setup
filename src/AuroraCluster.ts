@@ -1,11 +1,11 @@
-import {Construct} from "@aws-cdk/core";
+import {IVpc, SubnetType} from "aws-cdk-lib/aws-ec2";
+import {Construct} from "constructs";
 import {
     AuroraCapacityUnit,
     Credentials,
     DatabaseClusterEngine,
     ServerlessCluster,
-} from "@aws-cdk/aws-rds";
-import {IVpc, SubnetType} from "@aws-cdk/aws-ec2";
+} from "aws-cdk-lib/aws-rds";
 
 export interface AuroraClusterProps {
     readonly vpc: IVpc;
@@ -32,6 +32,6 @@ export function auroraCluster(
             minCapacity: AuroraCapacityUnit.ACU_1,
         },
         vpc: props.vpc,
-        vpcSubnets: {subnetType: SubnetType.ISOLATED, onePerAz: true},
+        vpcSubnets: {subnetType: SubnetType.PRIVATE_ISOLATED, onePerAz: true},
     });
 }
