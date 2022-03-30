@@ -1,5 +1,10 @@
 import {Construct} from "@aws-cdk/core";
-import {AuroraCapacityUnit, Credentials, DatabaseClusterEngine, ServerlessCluster} from "@aws-cdk/aws-rds";
+import {
+    AuroraCapacityUnit,
+    Credentials,
+    DatabaseClusterEngine,
+    ServerlessCluster,
+} from "@aws-cdk/aws-rds";
 import {IVpc, SubnetType} from "@aws-cdk/aws-ec2";
 
 export interface AuroraClusterProps {
@@ -12,7 +17,10 @@ export interface AuroraClusterProps {
  * 2. Allocate cluster in isolated network.
  * 3. Enable data API.
  */
-export function auroraCluster(scope: Construct, props: AuroraClusterProps): ServerlessCluster {
+export function auroraCluster(
+    scope: Construct,
+    props: AuroraClusterProps,
+): ServerlessCluster {
     return new ServerlessCluster(scope, "AuroraCluster", {
         clusterIdentifier: "blog",
         credentials: Credentials.fromGeneratedSecret("root"),

@@ -1,9 +1,8 @@
 #!/usr/bin/env node
-import "source-map-support/register";
 import {App} from "@aws-cdk/core";
-import {BlogStack} from "../lib/BlogStack";
+import {BlogStack} from "./BlogStack.js";
 import {env} from "process";
-import * as Joi from "joi";
+import Joi from "joi";
 
 validateEnvironment();
 

@@ -1,18 +1,18 @@
 import {Construct, Stack} from "@aws-cdk/core";
-import {blogVpc} from "./BlogVpc";
-import {auroraCluster} from "./AuroraCluster";
-import {webServer} from "./WebServer";
+import {blogVpc} from "./BlogVpc.js";
+import {auroraCluster} from "./AuroraCluster.js";
+import {webServer} from "./WebServer.js";
 import {
     ARecord,
     PublicHostedZone,
     RecordTarget,
     TxtRecord,
 } from "@aws-cdk/aws-route53";
-import {loadBalancer} from "./LoadBalancer";
+import {loadBalancer} from "./LoadBalancer.js";
 import {CloudFrontTarget} from "@aws-cdk/aws-route53-targets";
 import {Environment} from "@aws-cdk/core/lib/environment";
-import {cloudFrontDist, CloudFrontDist} from "./CloudFrontDist";
-import {monitoringDashboard} from "./Monitoring";
+import {cloudFrontDist, CloudFrontDist} from "./CloudFrontDist.js";
+import {monitoringDashboard} from "./Monitoring.js";
 import {ServerlessCluster} from "@aws-cdk/aws-rds";
 import {Instance, Vpc} from "@aws-cdk/aws-ec2";
 import {ApplicationLoadBalancer} from "@aws-cdk/aws-elasticloadbalancingv2";

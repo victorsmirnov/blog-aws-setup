@@ -1,11 +1,11 @@
 import {Dashboard, GraphWidget} from "@aws-cdk/aws-cloudwatch";
 import {Construct} from "@aws-cdk/core";
 import {
+    ApplicationLoadBalancer,
     HttpCodeElb,
     HttpCodeTarget,
-} from "@aws-cdk/aws-elasticloadbalancingv2/lib/alb/application-load-balancer";
-import {CloudFrontDist, ErrorRate} from "./CloudFrontDist";
-import {ApplicationLoadBalancer} from "@aws-cdk/aws-elasticloadbalancingv2";
+} from "@aws-cdk/aws-elasticloadbalancingv2";
+import {CloudFrontDist, ErrorRate} from "./CloudFrontDist.js";
 import {Instance} from "@aws-cdk/aws-ec2";
 
 export interface MonitoringProps {
