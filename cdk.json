@@ -1,11 +1,6 @@
 {
     "app": "node -r dotenv/config dist/Main.js",
     "context": {
-        "aws-cdk:enableDiffNoFail": "true",
-        "@aws-cdk/core:stackRelativeExports": "true",
-        "@aws-cdk/aws-ecr-assets:dockerIgnoreSupport": true,
-        "@aws-cdk/aws-kms:defaultKeyPolicies": true,
-        "@aws-cdk/aws-s3:grantWriteWithoutAcl": true,
-        "@aws-cdk/aws-ecs-patterns:removeDefaultDesiredCount": true
+        "@aws-cdk/core:newStyleStackSynthesis": true
     }
 }
