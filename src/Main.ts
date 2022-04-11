@@ -1,38 +1,39 @@
 #!/usr/bin/env node
-import {BlogStack} from "./BlogStack.js";
-import {env} from "process";
-import Joi from "joi";
-import {App} from "aws-cdk-lib";
+import { BlogStack } from './BlogStack.js'
+import { env } from 'process'
+import Joi from 'joi'
+import { App } from 'aws-cdk-lib'
 
-validateEnvironment();
+validateEnvironment()
 
-const app = new App();
+const app = new App()
+// eslint-disable-next-line no-new
 new BlogStack(app, {
-    domainName: env.DOMAIN_NAME,
-    env: {account: env.AWS_ACCOUNT, region: env.AWS_REGION},
-    googleVerify: env.GOOGLE_VERIFY,
-    vpcCidr: env.VPC_CIDR,
-});
+  domainName: env.DOMAIN_NAME,
+  env: { account: env.AWS_ACCOUNT, region: env.AWS_REGION },
+  googleVerify: env.GOOGLE_VERIFY,
+  vpcCidr: env.VPC_CIDR
+})
 
 /**
  * Validate environment variable. Print an error message and throws an exception in case of failure.
  */
-function validateEnvironment() {
-    const envSchema = Joi.object({
-        AWS_ACCOUNT: Joi.string().required(),
+function validateEnvironment (): void {
+  const envSchema = Joi.object({
+    AWS_ACCOUNT: Joi.string().required(),
 
-        AWS_REGION: Joi.string().required(),
+    AWS_REGION: Joi.string().required(),
 
-        DOMAIN_NAME: Joi.string().required(),
+    DOMAIN_NAME: Joi.string().required(),
 
-        GOOGLE_VERIFY: Joi.string(),
+    GOOGLE_VERIFY: Joi.string(),
 
-        VPC_CIDR: Joi.string().required(),
-    }).unknown(true);
+    VPC_CIDR: Joi.string().required()
+  }).unknown(true)
 
-    const validationRes = envSchema.validate(env);
-    if (validationRes.error) {
-        console.log(validationRes.error.annotate());
-        throw validationRes.error;
-    }
+  const validationRes = envSchema.validate(env)
+  if (validationRes.error != null) {
+    console.log(validationRes.error.annotate())
+    throw validationRes.error
+  }
 }

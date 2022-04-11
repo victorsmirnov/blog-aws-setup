@@ -1,6 +1,10 @@
-# Infrastructure for victorsmirnov.blog
+[![License](https://badgen.net/github/license/victorsmirnov/blog-aws-setup?color=purple)](https://github.com/victorsmirnov/blog-aws-setup/blob/master/LICENSE.md)
+[![TS-Standard - Typescript Standard Style Guide](https://badgen.net/badge/code%20style/ts-standard/blue?color=purple&icon=typescript)](https://github.com/standard/ts-standard)
+[![Dependabot badge](https://badgen.net/github/dependabot/victorsmirnov/blog-aws-setup?color=purple&icon=dependabot)](https://dependabot.com/)
 
-The project builds AWS cloud for personal blog website.
+# The AWS Cloud infrastructure for the [victorsmirnov.blog](https://victorsmirnov.blog) blog
+
+The AWS CDK project to build the AWS infrastructure for the personal blog project.
 
 ## Notes
 
