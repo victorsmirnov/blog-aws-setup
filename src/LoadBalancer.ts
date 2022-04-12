@@ -26,7 +26,7 @@ export interface LoadBalancerProps {
  * 1. HTTP listener should redirect to HTTPS.
  * 2. HTTPS listener should forward to our web server.
  */
-export function loadBalancer (
+export function createLoadBalancer (
   scope: Construct,
   { domainName, hostedZone, vpc, webServer }: LoadBalancerProps
 ): ApplicationLoadBalancer {

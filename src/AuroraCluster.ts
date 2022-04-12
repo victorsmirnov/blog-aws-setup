@@ -12,10 +12,7 @@ export interface AuroraClusterProps {
  * 2. Allocate cluster in isolated network.
  * 3. Enable data API.
  */
-export function auroraCluster (
-  scope: Construct,
-  props: AuroraClusterProps
-): ServerlessCluster {
+export function createAuroraCluster (scope: Construct, { vpc }: AuroraClusterProps): ServerlessCluster {
   return new ServerlessCluster(scope, 'AuroraCluster', {
     clusterIdentifier: 'blog',
     credentials: Credentials.fromGeneratedSecret('root'),
@@ -26,7 +23,7 @@ export function auroraCluster (
       maxCapacity: AuroraCapacityUnit.ACU_4,
       minCapacity: AuroraCapacityUnit.ACU_1
     },
-    vpc: props.vpc,
+    vpc,
     vpcSubnets: { subnetType: SubnetType.PRIVATE_ISOLATED, onePerAz: true }
   })
 }

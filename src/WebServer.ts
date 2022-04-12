@@ -20,7 +20,7 @@ export interface WebServerProps {
  * 1. We place instance in public zone.
  * 2. Security group allows incoming HTTP traffic to the Ghost service and allows to connect to Aurora RDS.
  */
-export function webServer (scope: Construct, props: WebServerProps): Instance {
+export function createWebServer (scope: Construct, props: WebServerProps): Instance {
   const instance = new Instance(scope, 'WebServer', {
     instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO),
     machineImage: MachineImage.genericLinux({

@@ -2,9 +2,9 @@
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
-      AWS_ACCOUNT: string
+      CDK_DEFAULT_ACCOUNT: string
 
-      AWS_REGION: string
+      CDK_DEFAULT_REGION: string
 
       DOMAIN_NAME: string
 

@@ -26,10 +26,11 @@ export interface CloudFrontDistProps {
  * @param domainName
  * @param hostedZone
  */
-export function cloudFrontDist (
-  scope: Construct,
-  { albDomainName, domainName, hostedZone }: CloudFrontDistProps
-): CloudFrontDist {
+export function createCloudFrontDist (scope: Construct, {
+  albDomainName,
+  domainName,
+  hostedZone
+}: CloudFrontDistProps): CloudFrontDist {
   const certificate = new DnsValidatedCertificate(scope, 'CloudFrontCert', {
     domainName,
     hostedZone: hostedZone,

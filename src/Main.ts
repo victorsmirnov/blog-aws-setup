@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { BlogStack } from './BlogStack.js'
+import { createBlogStack } from './BlogStack.js'
 import { env } from 'process'
 import Joi from 'joi'
 import { App } from 'aws-cdk-lib'
@@ -7,12 +7,10 @@ import { App } from 'aws-cdk-lib'
 validateEnvironment()
 
 const app = new App()
-// eslint-disable-next-line no-new
-new BlogStack(app, {
-  domainName: env.DOMAIN_NAME,
-  env: { account: env.AWS_ACCOUNT, region: env.AWS_REGION },
-  googleVerify: env.GOOGLE_VERIFY,
-  vpcCidr: env.VPC_CIDR
+createBlogStack(app, {
+  domainName: 'victorsmirnov.blog',
+  env: { account: env.CDK_DEFAULT_ACCOUNT, region: env.CDK_DEFAULT_REGION },
+  vpcCidr: '10.100.0.0/16'
 })
 
 /**
@@ -20,15 +18,9 @@ new BlogStack(app, {
  */
 function validateEnvironment (): void {
   const envSchema = Joi.object({
-    AWS_ACCOUNT: Joi.string().required(),
+    CDK_DEFAULT_ACCOUNT: Joi.string().required(),
 
-    AWS_REGION: Joi.string().required(),
-
-    DOMAIN_NAME: Joi.string().required(),
-
-    GOOGLE_VERIFY: Joi.string(),
-
-    VPC_CIDR: Joi.string().required()
+    CDK_DEFAULT_REGION: Joi.string().required()
   }).unknown(true)
 
   const validationRes = envSchema.validate(env)

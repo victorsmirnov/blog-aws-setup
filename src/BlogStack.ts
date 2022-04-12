@@ -1,15 +1,11 @@
-import { blogVpc } from './BlogVpc.js'
-import { auroraCluster } from './AuroraCluster.js'
-import { webServer } from './WebServer.js'
-import { loadBalancer } from './LoadBalancer.js'
-import { cloudFrontDist, CloudFrontDist } from './CloudFrontDist.js'
-import { monitoringDashboard } from './Monitoring.js'
-import { Environment, Stack } from 'aws-cdk-lib'
-import { ServerlessCluster } from 'aws-cdk-lib/aws-rds'
+import { createVpc } from './Vpc.js'
+import { createAuroraCluster } from './AuroraCluster.js'
+import { createWebServer } from './WebServer.js'
+import { createLoadBalancer } from './LoadBalancer.js'
+import { createCloudFrontDist } from './CloudFrontDist.js'
+import { createDashboard } from './Monitoring.js'
+import { CfnParameter, Environment, Stack } from 'aws-cdk-lib'
 import { ARecord, PublicHostedZone, RecordTarget, TxtRecord } from 'aws-cdk-lib/aws-route53'
-import { ApplicationLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2'
-import { Dashboard } from 'aws-cdk-lib/aws-cloudwatch'
-import { Instance, Vpc } from 'aws-cdk-lib/aws-ec2'
 import { Construct } from 'constructs'
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets'
 
@@ -25,11 +21,6 @@ export interface BlogStackProps {
   readonly env: Environment
 
   /**
-   * Site verification for Google Analytics.
-   */
-  readonly googleVerify?: string
-
-  /**
    * VPC CIDR. We assume the CIDR size to equal 16. Subnets CIDR mask is 20 and we leave 4 bits for subnet numbers.
    * For example, "10.100.0.0/16"
    */
@@ -39,77 +30,53 @@ export interface BlogStackProps {
 /**
  * Define blog stack.
  */
-export class BlogStack {
-  public readonly stack: Stack
+export function createBlogStack (scope: Construct, { domainName, env, vpcCidr }: BlogStackProps): Stack {
+  const stack = new Stack(scope, 'BlogStack', { env })
 
-  public readonly auroraCluster: ServerlessCluster
+  const googleVerify = new CfnParameter(stack, 'GoogleVerify', {
+    description: 'Site verification for Google Analytics.',
+    type: 'String'
+  })
 
-  public readonly cloudFrontDist: CloudFrontDist
+  const hostedZone = new PublicHostedZone(stack, 'HostedZone', {
+    zoneName: domainName
+  })
 
-  public readonly hostedZone: PublicHostedZone
+  // eslint-disable-next-line no-new
+  new TxtRecord(stack, 'GoogleVerification', {
+    values: [googleVerify.valueAsString],
+    zone: hostedZone
+  })
 
-  public readonly loadBalancer: ApplicationLoadBalancer
+  const vpc = createVpc(stack, { cidr: vpcCidr })
 
-  public readonly monitoring: Dashboard
+  const webServer = createWebServer(stack, { vpc })
 
-  public readonly vpc: Vpc
+  const loadBalancer = createLoadBalancer(stack, {
+    domainName,
+    hostedZone,
+    vpc,
+    webServer
+  })
 
-  public readonly webServer: Instance
+  const auroraCluster = createAuroraCluster(stack, { vpc })
+  auroraCluster.connections.allowDefaultPortFrom(webServer, 'Allow web server access')
 
-  constructor (
-    scope: Construct,
-    { domainName, env, googleVerify, vpcCidr }: BlogStackProps
-  ) {
-    this.stack = new Stack(scope, 'BlogStack', { env })
+  const cloudFrontDist = createCloudFrontDist(stack, {
+    albDomainName: loadBalancer.loadBalancerDnsName,
+    domainName,
+    hostedZone
+  })
 
-    this.hostedZone = new PublicHostedZone(this.stack, 'HostedZone', {
-      zoneName: domainName
-    })
-    if (googleVerify !== undefined) {
-      // eslint-disable-next-line no-new
-      new TxtRecord(this.stack, 'GoogleVerification', {
-        values: [googleVerify],
-        zone: this.hostedZone
-      })
-    }
+  // eslint-disable-next-line no-new
+  new ARecord(stack, 'WebServerARecord', {
+    target: RecordTarget.fromAlias(
+      new CloudFrontTarget(cloudFrontDist)
+    ),
+    zone: hostedZone
+  })
 
-    this.vpc = blogVpc(this.stack, { cidr: vpcCidr })
+  createDashboard(stack, { cloudFrontDist, loadBalancer, webServer })
 
-    this.webServer = webServer(this.stack, {
-      vpc: this.vpc
-    })
-
-    this.loadBalancer = loadBalancer(this.stack, {
-      domainName,
-      hostedZone: this.hostedZone,
-      vpc: this.vpc,
-      webServer: this.webServer
-    })
-
-    this.auroraCluster = auroraCluster(this.stack, { vpc: this.vpc })
-    this.auroraCluster.connections.allowDefaultPortFrom(
-      this.webServer,
-      'Allow web server access'
-    )
-
-    this.cloudFrontDist = cloudFrontDist(this.stack, {
-      albDomainName: this.loadBalancer.loadBalancerDnsName,
-      domainName,
-      hostedZone: this.hostedZone
-    })
-
-    // eslint-disable-next-line no-new
-    new ARecord(this.stack, 'WebServerARecord', {
-      target: RecordTarget.fromAlias(
-        new CloudFrontTarget(this.cloudFrontDist)
-      ),
-      zone: this.hostedZone
-    })
-
-    this.monitoring = monitoringDashboard(this.stack, {
-      cloudFrontDist: this.cloudFrontDist,
-      loadBalancer: this.loadBalancer,
-      webServer: this.webServer
-    })
-  }
+  return stack
 }

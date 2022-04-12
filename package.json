@@ -8,7 +8,6 @@
         "aws-cdk-lib": "^2.20.0",
         "cdk": "^2.20.0",
         "constructs": "^10.0.110",
-        "dotenv": "^16.0.0",
         "joi": "^17.6.0"
     },
     "devDependencies": {
@@ -28,7 +27,7 @@
         "clean": "rimraf cdk.out dist",
         "format": "ts-standard --fix --verbose | snazzy",
         "prepare": "husky install",
-        "test": "ts-standard --fix --verbose | snazzy"
+        "test": "ts-standard --verbose | snazzy"
     },
     "type": "module"
 }

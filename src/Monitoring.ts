@@ -12,10 +12,7 @@ export interface MonitoringProps {
   readonly webServer: Instance
 }
 
-export function monitoringDashboard (
-  scope: Construct,
-  { cloudFrontDist, loadBalancer }: MonitoringProps
-): Dashboard {
+export function createDashboard (scope: Construct, { cloudFrontDist, loadBalancer }: MonitoringProps): Dashboard {
   return new Dashboard(scope, 'MonitoringDashboard', {
     dashboardName: 'blog-monitoring',
     widgets: [
