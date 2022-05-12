@@ -4,12 +4,17 @@ import { createWebServer } from './WebServer.js'
 import { createLoadBalancer } from './LoadBalancer.js'
 import { createCloudFrontDist } from './CloudFrontDist.js'
 import { createDashboard } from './Monitoring.js'
-import { CfnParameter, Environment, Stack } from 'aws-cdk-lib'
+import { Environment, Stack } from 'aws-cdk-lib'
 import { ARecord, PublicHostedZone, RecordTarget, TxtRecord } from 'aws-cdk-lib/aws-route53'
 import { Construct } from 'constructs'
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets'
 
 export interface BlogStackProps {
+  /**
+   * VPN certificate ARN
+   */
+  readonly certificateArn: string
+
   /**
    * Blog domain name.
    */
@@ -21,39 +26,48 @@ export interface BlogStackProps {
   readonly env: Environment
 
   /**
+   * Site verification for Google Analytics.
+   */
+  readonly googleVerify: string
+
+  /**
    * VPC CIDR. We assume the CIDR size to equal 16. Subnets CIDR mask is 20 and we leave 4 bits for subnet numbers.
    * For example, "10.100.0.0/16"
    */
   readonly vpcCidr: string
+
+  /**
+   * Client VPN CIDR range.
+   */
+  readonly vpnCidr: string
 }
 
 /**
  * Define blog stack.
  */
-export function createBlogStack (scope: Construct, { domainName, env, vpcCidr }: BlogStackProps): Stack {
-  const stack = new Stack(scope, 'BlogStack', { env })
-
-  const googleVerify = new CfnParameter(stack, 'GoogleVerify', {
-    description: 'Site verification for Google Analytics.',
-    type: 'String'
-  })
+export function createBlogStack (scope: Construct, props: BlogStackProps): Stack {
+  const stack = new Stack(scope, 'BlogStack', { env: props.env })
 
   const hostedZone = new PublicHostedZone(stack, 'HostedZone', {
-    zoneName: domainName
+    zoneName: props.domainName
   })
 
   // eslint-disable-next-line no-new
   new TxtRecord(stack, 'GoogleVerification', {
-    values: [googleVerify.valueAsString],
+    values: [props.googleVerify],
     zone: hostedZone
   })
 
-  const vpc = createVpc(stack, { cidr: vpcCidr })
+  const vpc = createVpc(stack, {
+    certificateArn: props.certificateArn,
+    vpcCidr: props.vpcCidr,
+    vpnCidr: props.vpnCidr
+  })
 
   const webServer = createWebServer(stack, { vpc })
 
   const loadBalancer = createLoadBalancer(stack, {
-    domainName,
+    domainName: props.domainName,
     hostedZone,
     vpc,
     webServer
@@ -64,7 +78,7 @@ export function createBlogStack (scope: Construct, { domainName, env, vpcCidr }:
 
   const cloudFrontDist = createCloudFrontDist(stack, {
     albDomainName: loadBalancer.loadBalancerDnsName,
-    domainName,
+    domainName: props.domainName,
     hostedZone
   })
 

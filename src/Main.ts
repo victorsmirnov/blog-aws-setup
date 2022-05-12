@@ -8,9 +8,12 @@ validateEnvironment()
 
 const app = new App()
 createBlogStack(app, {
+  certificateArn: String(app.node.tryGetContext('certificate-arn')),
   domainName: 'victorsmirnov.blog',
   env: { account: env.CDK_DEFAULT_ACCOUNT, region: env.CDK_DEFAULT_REGION },
-  vpcCidr: '10.100.0.0/16'
+  googleVerify: String(app.node.tryGetContext('google-verify')),
+  vpcCidr: '10.100.0.0/16',
+  vpnCidr: '10.110.0.0/16'
 })
 
 /**

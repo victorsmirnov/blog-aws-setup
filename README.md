@@ -15,4 +15,21 @@ The AWS CDK project to build the AWS infrastructure for the personal blog projec
  * `npm run build:watch` watch for changes and compile.
  * `cdk --profile <name> diff` compare deployed stack with current state.
  * `cdk --profile <name> deploy --no-execute` create change.
- * `cdk --profile <name> deploy --parameters GoogleVerify=<verification string>` deploy the stack.
+ * `cdk --profile <name> deploy` deploy the stack.
+
+## Server and client certificates
+
+```shell
+./easyrsa init-pki
+
+./easyrsa build-ca nopass
+
+./easyrsa build-server-full server nopass
+
+aws --profile <name> acm import-certificate --certificate fileb://easyrsa3/pki/issued/server.crt \
+    --private-key fileb://easyrsa3/pki/private/server.key \
+    --certificate-chain fileb://easyrsa3/pki/ca.crt
+
+./easyrsa build-client-full <email-address> nopass
+
+```
