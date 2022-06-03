@@ -1,5 +1,5 @@
 import { Construct } from 'constructs'
-import { ClientVpnEndpoint, SubnetType, Vpc } from 'aws-cdk-lib/aws-ec2'
+import { SubnetType, Vpc } from 'aws-cdk-lib/aws-ec2'
 
 export interface BlogVpcProps {
   readonly certificateArn: string
@@ -12,8 +12,8 @@ export interface BlogVpcProps {
  * 1. We do not have private network and NAT to save some money.
  * 2. We can have up to 15 networks in our VPC and each network can have 4091 IP addresses.
  */
-export function createVpc (scope: Construct, { certificateArn, vpcCidr, vpnCidr }: BlogVpcProps): Vpc {
-  const vpc = new Vpc(scope, 'VPC', {
+export function createVpc (scope: Construct, { vpcCidr }: BlogVpcProps): Vpc {
+  return new Vpc(scope, 'VPC', {
     cidr: vpcCidr,
     enableDnsHostnames: true,
     enableDnsSupport: true,
@@ -32,18 +32,4 @@ export function createVpc (scope: Construct, { certificateArn, vpcCidr, vpnCidr 
       }
     ]
   })
-
-  // eslint-disable-next-line no-new
-  new ClientVpnEndpoint(scope, 'ClientVPN', {
-    authorizeAllUsersToVpcCidr: true,
-    cidr: vpnCidr,
-    clientCertificateArn: certificateArn,
-    dnsServers: ['10.100.0.2'],
-    serverCertificateArn: certificateArn,
-    splitTunnel: true,
-    vpc,
-    vpcSubnets: { subnets: Array.of(...vpc.publicSubnets, ...vpc.privateSubnets) }
-  })
-
-  return vpc
 }
