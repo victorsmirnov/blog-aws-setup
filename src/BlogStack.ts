@@ -8,6 +8,7 @@ import { Environment, Stack } from 'aws-cdk-lib'
 import { ARecord, PublicHostedZone, RecordTarget, TxtRecord } from 'aws-cdk-lib/aws-route53'
 import { Construct } from 'constructs'
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets'
+import { Effect, OpenIdConnectPrincipal, OpenIdConnectProvider, PolicyStatement, Role } from 'aws-cdk-lib/aws-iam'
 
 export interface BlogStackProps {
   /**
@@ -91,6 +92,30 @@ export function createBlogStack (scope: Construct, props: BlogStackProps): Stack
   })
 
   createDashboard(stack, { cloudFrontDist, loadBalancer, webServer })
+
+  // Configure GitHub OpenID connection following
+  // https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+  // CloudFormation template example:
+  // https://github.com/aws-actions/configure-aws-credentials#sample-iam-role-cloudformation-template
+  const provider = new OpenIdConnectProvider(stack, 'GitHubProvider', {
+    clientIds: ['sts.amazonaws.com'],
+    thumbprints: ['6938fd4d98bab03faadb97b34396831e3780aea1'],
+    url: 'https://token.actions.githubusercontent.com'
+  })
+
+  const deploymentRole = new Role(stack, 'ThemeDeploymentRole', {
+    assumedBy: new OpenIdConnectPrincipal(provider)
+      .withConditions({
+        StringLike: { 'token.actions.githubusercontent.com:sub': 'repo:victorsmirnov/blog-theme:*' }
+      }),
+    roleName: 'ThemeDeploymentRole'
+  })
+
+  deploymentRole.addToPolicy(new PolicyStatement({
+    actions: ['cloudfront:CreateInvalidation'],
+    effect: Effect.ALLOW,
+    resources: [`arn:aws:cloudfront::${String(props.env.account)}:distribution/${cloudFrontDist.distributionId}`]
+  }))
 
   return stack
 }
