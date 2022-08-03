@@ -9,6 +9,8 @@ import { ARecord, PublicHostedZone, RecordTarget, TxtRecord } from 'aws-cdk-lib/
 import { Construct } from 'constructs'
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets'
 import { Effect, OpenIdConnectPrincipal, OpenIdConnectProvider, PolicyStatement, Role } from 'aws-cdk-lib/aws-iam'
+import { createWebsiteBucket } from './WebsiteBucket.js'
+import { OriginAccessIdentity } from 'aws-cdk-lib/aws-cloudfront'
 
 export interface BlogStackProps {
   /**
@@ -65,6 +67,17 @@ export function createBlogStack (scope: Construct, props: BlogStackProps): Stack
     vpnCidr: props.vpnCidr
   })
 
+  const siteBucket = createWebsiteBucket(stack, { bucketName: props.domainName })
+
+  const originAccessIdentity = new OriginAccessIdentity(stack, 'CloudfrontAccess')
+  const cloudfrontAccessPolicy = new PolicyStatement({
+    actions: ['s3:GetObject'],
+    effect: Effect.ALLOW,
+    principals: [originAccessIdentity.grantPrincipal],
+    resources: [siteBucket.arnForObjects('*')]
+  })
+  siteBucket.addToResourcePolicy(cloudfrontAccessPolicy)
+
   const webServer = createWebServer(stack, { vpc })
 
   const loadBalancer = createLoadBalancer(stack, {
@@ -78,9 +91,11 @@ export function createBlogStack (scope: Construct, props: BlogStackProps): Stack
   auroraCluster.connections.allowDefaultPortFrom(webServer, 'Allow web server access')
 
   const cloudFrontDist = createCloudFrontDist(stack, {
-    albDomainName: loadBalancer.loadBalancerDnsName,
     domainName: props.domainName,
-    hostedZone
+    hostedZone,
+    loadBalancer,
+    originAccessIdentity,
+    siteBucket
   })
 
   // eslint-disable-next-line no-new

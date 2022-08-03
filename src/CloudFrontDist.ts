@@ -4,32 +4,32 @@ import { DnsValidatedCertificate } from 'aws-cdk-lib/aws-certificatemanager'
 import {
   AllowedMethods,
   CachePolicy,
-  Distribution,
-  OriginProtocolPolicy,
+  Distribution, OriginAccessIdentity,
   OriginRequestPolicy,
-  OriginSslPolicy,
   ViewerProtocolPolicy
 } from 'aws-cdk-lib/aws-cloudfront'
-import { HttpOrigin } from 'aws-cdk-lib/aws-cloudfront-origins'
+import { LoadBalancerV2Origin, OriginGroup, S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins'
 import { Metric, MetricProps, Unit } from 'aws-cdk-lib/aws-cloudwatch'
+import { Bucket } from 'aws-cdk-lib/aws-s3'
+import { ApplicationLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2'
 
 export interface CloudFrontDistProps {
-  readonly albDomainName: string
   readonly domainName: string
   readonly hostedZone: PublicHostedZone
+  readonly loadBalancer: ApplicationLoadBalancer
+  readonly originAccessIdentity: OriginAccessIdentity
+  readonly siteBucket: Bucket
 }
 
 /**
  * Create CloudFront distribution (and certificate).
- * @param scope
- * @param albDomainName
- * @param domainName
- * @param hostedZone
  */
 export function createCloudFrontDist (scope: Construct, {
-  albDomainName,
   domainName,
-  hostedZone
+  hostedZone,
+  loadBalancer,
+  originAccessIdentity,
+  siteBucket
 }: CloudFrontDistProps): CloudFrontDist {
   const certificate = new DnsValidatedCertificate(scope, 'CloudFrontCert', {
     domainName,
@@ -37,17 +37,40 @@ export function createCloudFrontDist (scope: Construct, {
     region: 'us-east-1'
   })
 
+  const bucketOrigin = new S3Origin(siteBucket, {
+    originAccessIdentity,
+    originPath: '/public'
+  })
+
   return new CloudFrontDist(scope, 'Distribution', {
     certificate,
+    comment: `${domainName} Ghost site and S3 bucket`,
     defaultBehavior: {
       allowedMethods: AllowedMethods.ALLOW_ALL,
       cachePolicy: CachePolicy.CACHING_OPTIMIZED,
-      origin: new HttpOrigin(albDomainName, {
-        originSslProtocols: [OriginSslPolicy.TLS_V1_2],
-        protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY
-      }),
+      origin: new LoadBalancerV2Origin(loadBalancer),
       originRequestPolicy: OriginRequestPolicy.ALL_VIEWER,
       viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS
+    },
+    additionalBehaviors: {
+      '/projects/*': {
+        allowedMethods: AllowedMethods.ALLOW_GET_HEAD,
+        cachePolicy: CachePolicy.CACHING_OPTIMIZED,
+        origin: bucketOrigin,
+        originRequestPolicy: OriginRequestPolicy.CORS_S3_ORIGIN,
+        viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS
+      },
+      '/test/*': {
+        allowedMethods: AllowedMethods.ALLOW_GET_HEAD,
+        cachePolicy: CachePolicy.CACHING_OPTIMIZED,
+        origin: new OriginGroup({
+          fallbackOrigin: new LoadBalancerV2Origin(loadBalancer),
+          fallbackStatusCodes: [404],
+          primaryOrigin: bucketOrigin
+        }),
+        originRequestPolicy: OriginRequestPolicy.CORS_S3_ORIGIN,
+        viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS
+      }
     },
     domainNames: [domainName]
   })
@@ -75,8 +98,6 @@ export class CloudFrontDist extends Distribution {
   /**
    * CloudFront metric, see
    * https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/programming-cloudwatch-metrics.html
-   * @param metricName
-   * @param props
    */
   public metric (metricName: string, props?: Partial<MetricProps>): Metric {
     return new Metric({
@@ -93,8 +114,6 @@ export class CloudFrontDist extends Distribution {
 
   /**
    * The percentage of all viewer requests for which the response’s HTTP status code is 4xx or 5xx.
-   * @param metricName
-   * @param props
    */
   public metricErrorRate (
     metricName: ErrorRate,
@@ -110,7 +129,6 @@ export class CloudFrontDist extends Distribution {
   /**
    * The total number of viewer requests received by CloudFront, for all HTTP methods and for both HTTP
    * and HTTPS requests.
-   * @param props
    */
   public metricRequests (props?: Partial<MetricProps>): Metric {
     return this.metric('Requests', {

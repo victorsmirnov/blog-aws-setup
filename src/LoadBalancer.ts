@@ -56,13 +56,7 @@ export function createLoadBalancer (
   const target = new ApplicationTargetGroup(scope, 'WebServerTargetGroup', {
     port: 2369,
     protocol: ApplicationProtocol.HTTP,
-    targets: [
-      new IpTarget(
-        webServer.instancePrivateIp,
-        2369,
-        webServer.instanceAvailabilityZone
-      )
-    ],
+    targets: [new IpTarget(webServer.instancePrivateIp, 2369)],
     targetType: TargetType.IP,
     vpc
   })
