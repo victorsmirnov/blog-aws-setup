@@ -10,6 +10,7 @@ import {
   SecurityGroup,
   SubnetType
 } from 'aws-cdk-lib/aws-ec2'
+import { ManagedPolicy } from 'aws-cdk-lib/aws-iam'
 
 export interface WebServerProps {
   readonly vpc: IVpc
@@ -37,7 +38,10 @@ export function createWebServer (scope: Construct, props: WebServerProps): Insta
     vpc: props.vpc,
     vpcSubnets: { subnetType: SubnetType.PUBLIC, onePerAz: true }
   })
+
   instance.connections.allowFromAnyIpv4(Port.tcp(22), 'Allow SSH')
+
+  instance.role.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'))
 
   return instance
 }

@@ -17,6 +17,17 @@ The AWS CDK project to build the AWS infrastructure for the personal blog projec
  * `cdk --profile <name> deploy --no-execute` create change.
  * `cdk --profile <name> deploy` deploy the stack.
 
+## Install CloudWatch agent
+
+Documentation https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/download-cloudwatch-agent-commandline.html
+
+Copy configuration file `src/amazon-cloudwatch-agent.json` to the server's folder `/opt/aws/amazon-cloudwatch-agent/`.
+
+Check agent status on the server with `sudo service amazon-cloudwatch-agent status`.
+
+And my answer on StackOverflow about how to parse time from the logs:
+https://stackoverflow.com/questions/71148794/when-logging-to-cloudwatch-logs-in-a-json-format-what-is-the-name-of-the-timesta/73242108#73242108
+
 ## Server and client certificates
 
 ```shell
