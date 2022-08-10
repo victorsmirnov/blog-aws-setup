@@ -30,6 +30,7 @@ export function createVpc (scope: Construct, { vpcCidr }: BlogVpcProps): Vpc {
         name: 'Private (isolated)',
         subnetType: SubnetType.PRIVATE_ISOLATED
       }
-    ]
+    ],
+    vpcName: 'BlogVpc'
   })
 }

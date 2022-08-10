@@ -100,9 +100,7 @@ export function createBlogStack (scope: Construct, props: BlogStackProps): Stack
 
   // eslint-disable-next-line no-new
   new ARecord(stack, 'WebServerARecord', {
-    target: RecordTarget.fromAlias(
-      new CloudFrontTarget(cloudFrontDist)
-    ),
+    target: RecordTarget.fromAlias(new CloudFrontTarget(cloudFrontDist)),
     zone: hostedZone
   })
 

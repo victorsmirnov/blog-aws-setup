@@ -1,11 +1,16 @@
 import { PublicHostedZone } from 'aws-cdk-lib/aws-route53'
 import { Construct } from 'constructs'
+import { Duration } from 'aws-cdk-lib'
 import { DnsValidatedCertificate } from 'aws-cdk-lib/aws-certificatemanager'
 import {
   AllowedMethods,
+  CacheCookieBehavior,
+  CacheHeaderBehavior,
   CachePolicy,
-  Distribution, OriginAccessIdentity,
-  OriginRequestPolicy,
+  CacheQueryStringBehavior,
+  Distribution,
+  OriginAccessIdentity, OriginRequestCookieBehavior, OriginRequestHeaderBehavior,
+  OriginRequestPolicy, OriginRequestQueryStringBehavior,
   ViewerProtocolPolicy
 } from 'aws-cdk-lib/aws-cloudfront'
 import { LoadBalancerV2Origin, OriginGroup, S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins'
@@ -37,10 +42,34 @@ export function createCloudFrontDist (scope: Construct, {
     region: 'us-east-1'
   })
 
+  const assetsCachePolicy = new CachePolicy(scope, 'AssetsCachePolicy', {
+    cachePolicyName: 'AssetsCachePolicy',
+    comment: 'Include "v" query parameters in the cache key.',
+    cookieBehavior: CacheCookieBehavior.none(),
+    defaultTtl: Duration.seconds(86400), // 86400 seconds = 1 day
+    enableAcceptEncodingBrotli: true,
+    enableAcceptEncodingGzip: true,
+    headerBehavior: CacheHeaderBehavior.none(),
+    maxTtl: Duration.seconds(365 * 24 * 60 * 60), // 31536000 seconds = 1 year
+    minTtl: Duration.seconds(1),
+    queryStringBehavior: CacheQueryStringBehavior.allowList('v')
+  })
+
+  const assetsOriginRequestPolicy = new OriginRequestPolicy(scope, 'AssetsOriginRequestPolicy', {
+    comment: 'For S3 and Ghost server',
+    cookieBehavior: OriginRequestCookieBehavior.none(),
+    headerBehavior: OriginRequestHeaderBehavior.allowList(
+      'Access-Control-Request-Headers', 'Access-Control-Request-Method', 'Host', 'Origin'),
+    originRequestPolicyName: 'AssetsOriginRequestPolicy',
+    queryStringBehavior: OriginRequestQueryStringBehavior.none()
+  })
+
   const bucketOrigin = new S3Origin(siteBucket, {
     originAccessIdentity,
     originPath: '/public'
   })
+
+  const loadBalancerOrigin = new LoadBalancerV2Origin(loadBalancer)
 
   return new CloudFrontDist(scope, 'Distribution', {
     certificate,
@@ -48,27 +77,27 @@ export function createCloudFrontDist (scope: Construct, {
     defaultBehavior: {
       allowedMethods: AllowedMethods.ALLOW_ALL,
       cachePolicy: CachePolicy.CACHING_OPTIMIZED,
-      origin: new LoadBalancerV2Origin(loadBalancer),
+      origin: loadBalancerOrigin,
       originRequestPolicy: OriginRequestPolicy.ALL_VIEWER,
       viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS
     },
     additionalBehaviors: {
       '/projects/*': {
         allowedMethods: AllowedMethods.ALLOW_GET_HEAD,
-        cachePolicy: CachePolicy.CACHING_OPTIMIZED,
+        cachePolicy: assetsCachePolicy,
         origin: bucketOrigin,
         originRequestPolicy: OriginRequestPolicy.CORS_S3_ORIGIN,
         viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS
       },
-      '/test/*': {
+      '/assets/*': {
         allowedMethods: AllowedMethods.ALLOW_GET_HEAD,
         cachePolicy: CachePolicy.CACHING_OPTIMIZED,
         origin: new OriginGroup({
-          fallbackOrigin: new LoadBalancerV2Origin(loadBalancer),
-          fallbackStatusCodes: [404],
+          fallbackOrigin: loadBalancerOrigin,
+          fallbackStatusCodes: [403, 404],
           primaryOrigin: bucketOrigin
         }),
-        originRequestPolicy: OriginRequestPolicy.CORS_S3_ORIGIN,
+        originRequestPolicy: assetsOriginRequestPolicy,
         viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS
       }
     },
