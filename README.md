@@ -44,3 +44,9 @@ aws --profile <name> acm import-certificate --certificate fileb://easyrsa3/pki/i
 ./easyrsa build-client-full <email-address> nopass
 
 ```
+
+### Parameters for tcpdump to show incoming HTTP headers 
+
+```shell
+tcpdump -A -s 0 'tcp dst port 2369 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)'
+```

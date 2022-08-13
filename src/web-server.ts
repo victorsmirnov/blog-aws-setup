@@ -1,19 +1,19 @@
 import { Construct } from 'constructs'
+import { ManagedPolicy } from 'aws-cdk-lib/aws-iam'
 import {
   Instance,
   InstanceClass,
   InstanceSize,
   InstanceType,
-  IVpc,
   MachineImage,
   Port,
   SecurityGroup,
-  SubnetType
+  SubnetType,
+  Vpc
 } from 'aws-cdk-lib/aws-ec2'
-import { ManagedPolicy } from 'aws-cdk-lib/aws-iam'
 
 export interface WebServerProps {
-  readonly vpc: IVpc
+  readonly vpc: Vpc
 }
 
 /**
@@ -21,7 +21,7 @@ export interface WebServerProps {
  * 1. We place instance in public zone.
  * 2. Security group allows incoming HTTP traffic to the Ghost service and allows to connect to Aurora RDS.
  */
-export function createWebServer (scope: Construct, props: WebServerProps): Instance {
+export function createWebServer (scope: Construct, { vpc }: WebServerProps): Instance {
   const instance = new Instance(scope, 'WebServer', {
     instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO),
     machineImage: MachineImage.genericLinux({
@@ -32,10 +32,10 @@ export function createWebServer (scope: Construct, props: WebServerProps): Insta
     }),
     securityGroup: new SecurityGroup(scope, 'WebServerSG', {
       allowAllOutbound: true,
-      description: 'Allow SSH and HTTP access to web site instance',
-      vpc: props.vpc
+      description: 'Allow SSH and Ghost app access to web site instance',
+      vpc
     }),
-    vpc: props.vpc,
+    vpc,
     vpcSubnets: { subnetType: SubnetType.PUBLIC, onePerAz: true }
   })
 

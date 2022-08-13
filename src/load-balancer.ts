@@ -1,5 +1,5 @@
 import { PublicHostedZone } from 'aws-cdk-lib/aws-route53'
-import { Instance, IVpc, Port, SecurityGroup, SubnetType } from 'aws-cdk-lib/aws-ec2'
+import { Instance, Port, SubnetType, Vpc } from 'aws-cdk-lib/aws-ec2'
 import { Construct } from 'constructs'
 import {
   ApplicationLoadBalancer,
@@ -10,25 +10,24 @@ import {
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2'
 import { Certificate, CertificateValidation } from 'aws-cdk-lib/aws-certificatemanager'
 import { IpTarget } from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets'
+import { Duration } from 'aws-cdk-lib'
 
 export interface LoadBalancerProps {
   readonly domainName: string
-
   readonly hostedZone: PublicHostedZone
-
-  readonly vpc: IVpc
-
+  readonly vpc: Vpc
   readonly webServer: Instance
+  readonly webServerPort: number
 }
 
 /**
  * We put our web server behind load balancer.
- * 1. HTTP listener should redirect to HTTPS.
- * 2. HTTPS listener should forward to our web server.
+ * 1. No HTTP listener.
+ * 2. HTTPS listener forwards to the web server.
  */
 export function createLoadBalancer (
   scope: Construct,
-  { domainName, hostedZone, vpc, webServer }: LoadBalancerProps
+  { domainName, hostedZone, vpc, webServer, webServerPort }: LoadBalancerProps
 ): ApplicationLoadBalancer {
   const loadBalancerCert = new Certificate(scope, 'SslCertificate', {
     domainName,
@@ -37,26 +36,16 @@ export function createLoadBalancer (
 
   const alb = new ApplicationLoadBalancer(scope, 'WebServerALB', {
     internetFacing: true,
-    securityGroup: new SecurityGroup(scope, 'WebLoadBalancerSG', {
-      allowAllOutbound: true,
-      description: 'Allow public HTTP and HTTPS access.',
-      vpc
-    }),
     vpc,
     vpcSubnets: { subnetType: SubnetType.PUBLIC, onePerAz: true }
   })
 
-  alb.connections.allowFromAnyIpv4(Port.tcp(443), 'Allow HTTPS')
-  webServer.connections.allowFrom(
-    alb,
-    Port.tcp(2369),
-    'Allow Ghost connection from ALB'
-  )
+  webServer.connections.allowFrom(alb, Port.tcp(webServerPort), 'Allow Ghost connection from ALB')
 
   const target = new ApplicationTargetGroup(scope, 'WebServerTargetGroup', {
-    port: 2369,
+    port: webServerPort,
     protocol: ApplicationProtocol.HTTP,
-    targets: [new IpTarget(webServer.instancePrivateIp, 2369)],
+    targets: [new IpTarget(webServer.instancePrivateIp, webServerPort)],
     targetType: TargetType.IP,
     vpc
   })
@@ -66,6 +55,7 @@ export function createLoadBalancer (
     // https://github.com/TryGhost/Ghost/issues/11181
     // https://github.com/TryGhost/Ghost/pull/13117
     healthyHttpCodes: '200,301',
+    interval: Duration.seconds(300),
     path: '/health'
   })
 

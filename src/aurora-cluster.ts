@@ -1,9 +1,10 @@
-import { IVpc, SubnetType } from 'aws-cdk-lib/aws-ec2'
-import { Construct } from 'constructs'
+import { Instance, SubnetType, Vpc } from 'aws-cdk-lib/aws-ec2'
 import { AuroraCapacityUnit, Credentials, DatabaseClusterEngine, ServerlessCluster } from 'aws-cdk-lib/aws-rds'
+import { Construct } from 'constructs'
 
 export interface AuroraClusterProps {
-  readonly vpc: IVpc
+  readonly vpc: Vpc
+  readonly webServer: Instance
 }
 
 /**
@@ -12,8 +13,8 @@ export interface AuroraClusterProps {
  * 2. Allocate cluster in isolated network.
  * 3. Enable data API.
  */
-export function createAuroraCluster (scope: Construct, { vpc }: AuroraClusterProps): ServerlessCluster {
-  return new ServerlessCluster(scope, 'AuroraCluster', {
+export function createAuroraCluster (scope: Construct, { vpc, webServer }: AuroraClusterProps): ServerlessCluster {
+  const cluster = new ServerlessCluster(scope, 'AuroraCluster', {
     clusterIdentifier: 'blog',
     credentials: Credentials.fromGeneratedSecret('root'),
     defaultDatabaseName: 'ghost',
@@ -26,4 +27,8 @@ export function createAuroraCluster (scope: Construct, { vpc }: AuroraClusterPro
     vpc,
     vpcSubnets: { subnetType: SubnetType.PRIVATE_ISOLATED, onePerAz: true }
   })
+
+  cluster.connections.allowDefaultPortFrom(webServer, 'Allow web server access')
+
+  return cluster
 }

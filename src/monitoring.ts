@@ -1,24 +1,22 @@
-import { CloudFrontDist, ErrorRate } from './CloudFrontDist.js'
+import { ErrorRate, metricErrorRate, metricRequests } from './cloud-front-metrics.js'
 import { ApplicationLoadBalancer, HttpCodeElb, HttpCodeTarget } from 'aws-cdk-lib/aws-elasticloadbalancingv2'
 import { Instance } from 'aws-cdk-lib/aws-ec2'
 import { Construct } from 'constructs'
 import { Dashboard, GraphWidget } from 'aws-cdk-lib/aws-cloudwatch'
 
 export interface MonitoringProps {
-  readonly cloudFrontDist: CloudFrontDist
-
+  readonly distributionId: string
   readonly loadBalancer: ApplicationLoadBalancer
-
   readonly webServer: Instance
 }
 
-export function createDashboard (scope: Construct, { cloudFrontDist, loadBalancer }: MonitoringProps): Dashboard {
+export function createDashboard (scope: Construct, { distributionId, loadBalancer }: MonitoringProps): Dashboard {
   return new Dashboard(scope, 'MonitoringDashboard', {
     dashboardName: 'blog-monitoring',
     widgets: [
       [
-        distributionErrors(cloudFrontDist),
-        distributionRequests(cloudFrontDist)
+        distributionErrors(distributionId),
+        distributionRequests(distributionId)
       ],
       [
         targetCodes(loadBalancer),
@@ -29,22 +27,22 @@ export function createDashboard (scope: Construct, { cloudFrontDist, loadBalance
   })
 }
 
-function distributionErrors (cloudFrontDist: CloudFrontDist): GraphWidget {
+function distributionErrors (distributionId: string): GraphWidget {
   return new GraphWidget({
     height: 8,
     right: [
-      cloudFrontDist.metricErrorRate(ErrorRate.Total),
-      cloudFrontDist.metricErrorRate(ErrorRate.Error5xx)
+      metricErrorRate(distributionId, ErrorRate.Total),
+      metricErrorRate(distributionId, ErrorRate.Error5xx)
     ],
     title: 'CloudFront Errors',
     width: 12
   })
 }
 
-function distributionRequests (cloudFrontDist: CloudFrontDist): GraphWidget {
+function distributionRequests (distributionId: string): GraphWidget {
   return new GraphWidget({
     height: 8,
-    right: [cloudFrontDist.metricRequests()],
+    right: [metricRequests(distributionId)],
     title: 'CloudFront Requests',
     width: 12
   })

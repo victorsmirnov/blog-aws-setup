@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createBlogStack } from './BlogStack.js'
+import { createBlogStack } from './blog-stack.js'
 import { env } from 'process'
 import Joi from 'joi'
 import { App } from 'aws-cdk-lib'
@@ -12,8 +12,7 @@ createBlogStack(app, {
   domainName: 'victorsmirnov.blog',
   env: { account: env.CDK_DEFAULT_ACCOUNT, region: env.CDK_DEFAULT_REGION },
   googleVerify: String(app.node.tryGetContext('google-verify')),
-  vpcCidr: '10.100.0.0/16',
-  vpnCidr: '10.110.0.0/16'
+  vpcCidr: '10.100.0.0/16'
 })
 
 /**
