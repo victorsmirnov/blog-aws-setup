@@ -1,6 +1,6 @@
 ISC License
 
-Copyright (c) 2021, Victor Smirnov <victorsmirnov@yandex.ru>
+Copyright (c) 2021-2022, Victor Smirnov <admin@victorsmirnov.blog>
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
