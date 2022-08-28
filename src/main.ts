@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { createBlogStack } from './blog-stack.js'
 import { env } from 'process'
-import Joi from 'joi'
 import { App } from 'aws-cdk-lib'
+import Joi from 'joi'
 
 validateEnvironment()
 
@@ -21,7 +21,6 @@ createBlogStack(app, {
 function validateEnvironment (): void {
   const envSchema = Joi.object({
     CDK_DEFAULT_ACCOUNT: Joi.string().required(),
-
     CDK_DEFAULT_REGION: Joi.string().required()
   }).unknown(true)
 
