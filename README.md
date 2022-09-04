@@ -45,8 +45,15 @@ aws --profile <name> acm import-certificate --certificate fileb://easyrsa3/pki/i
 
 ```
 
-### Parameters for tcpdump to show incoming HTTP headers 
+## Parameters for tcpdump to show incoming HTTP headers 
 
 ```shell
 tcpdump -A -s 0 'tcp dst port 2369 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)'
+```
+
+## Backup database with MySQL dump
+
+```shell
+mysqldump -h blog.cluster-csuhqkhwiw2d.eu-west-1.rds.amazonaws.com -u root -p \
+    --column-statistics=0 --set-gtid-purged=OFF ghost > ghost.sql
 ```

@@ -2,10 +2,8 @@ import { Environment, Stack } from 'aws-cdk-lib'
 import { OriginAccessIdentity } from 'aws-cdk-lib/aws-cloudfront'
 import { PublicHostedZone, TxtRecord } from 'aws-cdk-lib/aws-route53'
 import { Construct } from 'constructs'
-import { createAuroraCluster } from './aurora-cluster.js'
 import { createCloudFront } from './cloud-front.js'
 import { createCloudFrontDns } from './cloud-front-dns.js'
-import { createGitHubConnect } from './git-hub-connect.js'
 import { createLoadBalancer } from './load-balancer.js'
 import { createDashboard } from './monitoring.js'
 import { createVpc } from './vpc.js'
@@ -13,11 +11,6 @@ import { createWebsiteBucket } from './website-bucket.js'
 import { createWebServer } from './web-server.js'
 
 export interface BlogStackProps {
-  /**
-   * VPN certificate ARN
-   */
-  readonly certificateArn: string
-
   /**
    * Blog domain name.
    */
@@ -44,14 +37,16 @@ export interface BlogStackProps {
  * Define blog stack.
  */
 export function createBlogStack (scope: Construct, props: BlogStackProps): Stack {
-  const stack = new Stack(scope, 'BlogStack', { env: props.env })
+  const { domainName, env, googleVerify, vpcCidr } = props
 
-  const hostedZone = new PublicHostedZone(stack, 'HostedZone', { zoneName: props.domainName })
+  const stack = new Stack(scope, 'BlogStack', { env })
+
+  const hostedZone = new PublicHostedZone(stack, 'HostedZone', { zoneName: domainName })
 
   // eslint-disable-next-line no-new
-  new TxtRecord(stack, 'GoogleVerification', { values: [props.googleVerify], zone: hostedZone })
+  new TxtRecord(stack, 'GoogleVerification', { values: [googleVerify], zone: hostedZone })
 
-  const vpc = createVpc(stack, { certificateArn: props.certificateArn, vpcCidr: props.vpcCidr })
+  const vpc = createVpc(stack, { vpcCidr })
 
   const accessIdentity = new OriginAccessIdentity(stack, 'CloudfrontAccess')
 
@@ -59,27 +54,11 @@ export function createBlogStack (scope: Construct, props: BlogStackProps): Stack
 
   const webServer = createWebServer(stack, { vpc })
 
-  const loadBalancer = createLoadBalancer(stack, {
-    domainName: props.domainName,
-    hostedZone,
-    vpc,
-    webServer,
-    webServerPort: 2369
-  })
+  const loadBalancer = createLoadBalancer(stack, { domainName, hostedZone, vpc, webServer, webServerPort: 2369 })
 
-  createAuroraCluster(stack, { vpc, webServer })
-
-  const cloudFront = createCloudFront(stack, {
-    accessIdentity,
-    domainName: props.domainName,
-    hostedZone,
-    loadBalancer,
-    siteBucket
-  })
+  const cloudFront = createCloudFront(stack, { accessIdentity, domainName, hostedZone, loadBalancer, siteBucket })
 
   createCloudFrontDns(stack, { cloudFront, hostedZone })
-
-  createGitHubConnect(stack, { cloudFront, env: props.env, siteBucket })
 
   createDashboard(stack, { distributionId: cloudFront.distributionId, loadBalancer, webServer })
 

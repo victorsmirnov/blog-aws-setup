@@ -23,7 +23,6 @@
         "noUnusedParameters": true,
         "outDir": "dist",
         "resolveJsonModule": true,
-        "rootDirs": ["src", "test"],
         "sourceMap": true,
         "sourceRoot": "src",
         "strict": true,

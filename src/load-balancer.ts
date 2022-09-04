@@ -25,10 +25,8 @@ export interface LoadBalancerProps {
  * 1. No HTTP listener.
  * 2. HTTPS listener forwards to the web server.
  */
-export function createLoadBalancer (
-  scope: Construct,
-  { domainName, hostedZone, vpc, webServer, webServerPort }: LoadBalancerProps
-): ApplicationLoadBalancer {
+export function createLoadBalancer (scope: Construct, props: LoadBalancerProps): ApplicationLoadBalancer {
+  const { domainName, hostedZone, vpc, webServer, webServerPort } = props
   const loadBalancerCert = new Certificate(scope, 'SslCertificate', {
     domainName,
     validation: CertificateValidation.fromDns(hostedZone)

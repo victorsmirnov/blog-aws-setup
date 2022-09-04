@@ -28,13 +28,9 @@ export interface CloudFrontProps {
 /**
  * Create CloudFront distribution (and certificate).
  */
-export function createCloudFront (scope: Construct, {
-  accessIdentity,
-  domainName,
-  hostedZone,
-  loadBalancer,
-  siteBucket
-}: CloudFrontProps): Distribution {
+export function createCloudFront (scope: Construct, props: CloudFrontProps): Distribution {
+  const { accessIdentity, domainName, hostedZone, loadBalancer, siteBucket } = props
+
   const certificate = new DnsValidatedCertificate(scope, 'CloudFrontCert', {
     domainName,
     hostedZone,
