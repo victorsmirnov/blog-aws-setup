@@ -5,12 +5,12 @@ import { Construct } from 'constructs'
 
 export interface CloudFrontDnsProps {
   readonly cloudFront: Distribution
-  readonly hostedZone: PublicHostedZone
+  readonly zone: PublicHostedZone
 }
 
-export function createCloudFrontDns (scope: Construct, { cloudFront, hostedZone }: CloudFrontDnsProps): ARecord {
+export function createCloudFrontDns (scope: Construct, { cloudFront, zone }: CloudFrontDnsProps): ARecord {
   return new ARecord(scope, 'WebServerARecord', {
     target: RecordTarget.fromAlias(new CloudFrontTarget(cloudFront)),
-    zone: hostedZone
+    zone
   })
 }

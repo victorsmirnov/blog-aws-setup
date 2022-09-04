@@ -4,15 +4,15 @@ import { PublicHostedZone, TxtRecord } from 'aws-cdk-lib/aws-route53'
 import { Construct } from 'constructs'
 import { createCloudFront } from './cloud-front.js'
 import { createCloudFrontDns } from './cloud-front-dns.js'
-import { createLoadBalancer } from './load-balancer.js'
 import { createDashboard } from './monitoring.js'
 import { createVpc } from './vpc.js'
 import { createWebsiteBucket } from './website-bucket.js'
 import { createWebServer } from './web-server.js'
+import { createServerDns } from './server-dns.js'
 
 export interface BlogStackProps {
   /**
-   * Blog domain name.
+   * Blog domain name in the DNS zone (full name).
    */
   readonly domainName: string
 
@@ -31,36 +31,42 @@ export interface BlogStackProps {
    * For example, "10.100.0.0/16"
    */
   readonly vpcCidr: string
+
+  /**
+   * Blog domain zone.
+   */
+  readonly zoneName: string
 }
 
 /**
  * Define blog stack.
  */
 export function createBlogStack (scope: Construct, props: BlogStackProps): Stack {
-  const { domainName, env, googleVerify, vpcCidr } = props
+  const { domainName, env, googleVerify, vpcCidr, zoneName } = props
+  const serverName = `server.${zoneName}`
 
   const stack = new Stack(scope, 'BlogStack', { env })
 
-  const hostedZone = new PublicHostedZone(stack, 'HostedZone', { zoneName: domainName })
+  const zone = new PublicHostedZone(stack, 'HostedZone', { zoneName })
 
   // eslint-disable-next-line no-new
-  new TxtRecord(stack, 'GoogleVerification', { values: [googleVerify], zone: hostedZone })
+  new TxtRecord(stack, 'GoogleVerification', { values: [googleVerify], zone })
 
   const vpc = createVpc(stack, { vpcCidr })
 
   const accessIdentity = new OriginAccessIdentity(stack, 'CloudfrontAccess')
 
-  const siteBucket = createWebsiteBucket(stack, { accessIdentity, bucketName: props.domainName })
+  const siteBucket = createWebsiteBucket(stack, { accessIdentity, bucketName: props.zoneName })
 
-  const webServer = createWebServer(stack, { vpc })
+  const server = createWebServer(stack, { vpc })
 
-  const loadBalancer = createLoadBalancer(stack, { domainName, hostedZone, vpc, webServer, webServerPort: 2369 })
+  createServerDns(stack, { server, serverName, zone })
 
-  const cloudFront = createCloudFront(stack, { accessIdentity, domainName, hostedZone, loadBalancer, siteBucket })
+  const cloudFront = createCloudFront(stack, { accessIdentity, domainName, serverName, siteBucket, zone })
 
-  createCloudFrontDns(stack, { cloudFront, hostedZone })
+  createCloudFrontDns(stack, { cloudFront, zone })
 
-  createDashboard(stack, { distributionId: cloudFront.distributionId, loadBalancer, webServer })
+  createDashboard(stack, { distributionId: cloudFront.distributionId })
 
   return stack
 }

@@ -8,11 +8,11 @@ import {
   CacheQueryStringBehavior,
   Distribution,
   OriginAccessIdentity,
+  OriginProtocolPolicy,
   OriginRequestPolicy,
   ViewerProtocolPolicy
 } from 'aws-cdk-lib/aws-cloudfront'
-import { LoadBalancerV2Origin, S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins'
-import { ApplicationLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2'
+import { HttpOrigin, S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins'
 import { PublicHostedZone } from 'aws-cdk-lib/aws-route53'
 import { Bucket } from 'aws-cdk-lib/aws-s3'
 import { Construct } from 'constructs'
@@ -20,20 +20,20 @@ import { Construct } from 'constructs'
 export interface CloudFrontProps {
   readonly accessIdentity: OriginAccessIdentity
   readonly domainName: string
-  readonly hostedZone: PublicHostedZone
-  readonly loadBalancer: ApplicationLoadBalancer
+  readonly serverName: string
   readonly siteBucket: Bucket
+  readonly zone: PublicHostedZone
 }
 
 /**
  * Create CloudFront distribution (and certificate).
  */
 export function createCloudFront (scope: Construct, props: CloudFrontProps): Distribution {
-  const { accessIdentity, domainName, hostedZone, loadBalancer, siteBucket } = props
+  const { accessIdentity, domainName, zone, serverName, siteBucket } = props
 
   const certificate = new DnsValidatedCertificate(scope, 'CloudFrontCert', {
     domainName,
-    hostedZone,
+    hostedZone: zone,
     region: 'us-east-1'
   })
 
@@ -55,7 +55,10 @@ export function createCloudFront (scope: Construct, props: CloudFrontProps): Dis
     originPath: '/public'
   })
 
-  const loadBalancerOrigin = new LoadBalancerV2Origin(loadBalancer, { httpsPort: 443 })
+  const httpOrigin = new HttpOrigin(serverName, {
+    httpsPort: 443,
+    protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY
+  })
 
   return new Distribution(scope, 'Distribution', {
     certificate,
@@ -63,7 +66,7 @@ export function createCloudFront (scope: Construct, props: CloudFrontProps): Dis
     defaultBehavior: {
       allowedMethods: AllowedMethods.ALLOW_ALL,
       cachePolicy: CachePolicy.CACHING_OPTIMIZED,
-      origin: loadBalancerOrigin,
+      origin: httpOrigin,
       originRequestPolicy: OriginRequestPolicy.ALL_VIEWER,
       viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS
     },

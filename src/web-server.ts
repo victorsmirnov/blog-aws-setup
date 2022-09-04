@@ -40,6 +40,8 @@ export function createWebServer (scope: Construct, { vpc }: WebServerProps): Ins
   })
 
   instance.connections.allowFromAnyIpv4(Port.tcp(22), 'Allow SSH')
+  instance.connections.allowFromAnyIpv4(Port.tcp(80), 'Allow HTTP')
+  instance.connections.allowFromAnyIpv4(Port.tcp(443), 'Allow HTTPS')
 
   instance.role.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'))
 

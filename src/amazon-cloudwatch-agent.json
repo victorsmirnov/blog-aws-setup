@@ -5,15 +5,21 @@
         "collect_list": [
           {
             "file_path": "/var/www/victorsmirnov.blog/content/logs/https___victorsmirnov_blog__production.log",
-            "log_group_name": "victorsmirnov.blog/ghost-access-logs/{instance_id}",
+            "log_group_name": "victorsmirnov.blog/ghost-access-logs",
             "timezone": "UTC",
             "timestamp_format": "\"time\":\"%Y-%m-%dT%H:%M:%S.%fZ\""
           },
           {
             "file_path": "/var/www/victorsmirnov.blog/content/logs/https___victorsmirnov_blog__production.error.log",
-            "log_group_name": "victorsmirnov.blog/ghost-error-logs/{instance_id}",
+            "log_group_name": "victorsmirnov.blog/ghost-error-logs",
             "timezone": "UTC",
             "timestamp_format": "\"time\": \"%Y-%m-%d %H:%M:%S.%f\""
+          },
+          {
+            "file_path": "/var/log/nginx/access.log",
+            "log_group_name": "victorsmirnov.blog/nginx-access-logs",
+            "timezone": "UTC",
+            "timestamp_format": "\"time\":\"%Y-%m-%dT%H:%M:%S+00:00\""
           }
         ]
       }

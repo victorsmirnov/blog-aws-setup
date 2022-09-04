@@ -11,7 +11,8 @@ createBlogStack(app, {
   domainName: 'victorsmirnov.blog',
   env: { account: env.CDK_DEFAULT_ACCOUNT, region: env.CDK_DEFAULT_REGION },
   googleVerify: String(app.node.tryGetContext('google-verify')),
-  vpcCidr: '10.100.0.0/16'
+  vpcCidr: '10.100.0.0/16',
+  zoneName: 'victorsmirnov.blog'
 })
 
 /**
