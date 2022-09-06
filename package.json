@@ -1,18 +1,25 @@
 {
+    "author": {
+        "email": "admin@victorsmirnov.blog",
+        "name": "Victor Smirnov",
+        "url": "https://victorsmirnov.blog"
+    },
+    "description": "CDK infrastructure for Victor Smirnov blog",
     "name": "blog-deployment",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "bin": {
-        "blog": "bin/blog.js"
+        "blog": "dist/main.js"
     },
     "dependencies": {
         "aws-cdk-lib": "^2.40.0",
         "cdk": "^2.40.0",
         "constructs": "^10.1.94",
+        "dotenv": "^16.0.2",
         "joi": "^17.6.0"
     },
     "devDependencies": {
         "@types/joi": "^17.2.3",
-        "@types/node": "^18.7.14",
+        "@types/node": "^18.7.15",
         "husky": "^8.0.1",
         "lint-staged": "^13.0.3",
         "rimraf": "^3.0.2",
@@ -20,9 +27,12 @@
         "ts-standard": "^11.0.0",
         "typescript": "^4.8.2"
     },
+    "license": "ISC",
+    "repository": {
+        "url": "https://github.com/victorsmirnov/blog-aws-setup"
+    },
     "scripts": {
         "build": "tsc",
-        "build:watch": "tsc --watch",
         "cdk": "cdk",
         "clean": "rimraf cdk.out dist",
         "format": "ts-standard --fix --verbose | snazzy",

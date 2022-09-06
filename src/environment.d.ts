@@ -4,6 +4,7 @@ declare global {
     interface ProcessEnv {
       CDK_DEFAULT_ACCOUNT: string
       CDK_DEFAULT_REGION: string
+      GOOGLE_VERIFY: string
     }
   }
 }
