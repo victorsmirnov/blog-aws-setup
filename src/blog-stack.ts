@@ -56,7 +56,7 @@ export function createBlogStack (scope: Construct, props: BlogStackProps): Stack
 
   const accessIdentity = new OriginAccessIdentity(stack, 'CloudfrontAccess')
 
-  const siteBucket = createWebsiteBucket(stack, { accessIdentity, bucketName: props.zoneName })
+  const siteBucket = createWebsiteBucket(stack, { bucketName: zoneName })
 
   const server = createWebServer(stack, { vpc })
 
