@@ -12,7 +12,7 @@ import {
   OriginRequestPolicy,
   ViewerProtocolPolicy
 } from 'aws-cdk-lib/aws-cloudfront'
-import { HttpOrigin, S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins'
+import { HttpOrigin, OriginGroup, S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins'
 import { PublicHostedZone } from 'aws-cdk-lib/aws-route53'
 import { Bucket } from 'aws-cdk-lib/aws-s3'
 import { Construct } from 'constructs'
@@ -74,14 +74,11 @@ export function createCloudFront (scope: Construct, props: CloudFrontProps): Dis
       '/assets/*': {
         allowedMethods: AllowedMethods.ALLOW_GET_HEAD,
         cachePolicy: assetsCachePolicy,
-        origin: bucketOrigin,
-        originRequestPolicy: OriginRequestPolicy.CORS_S3_ORIGIN,
-        viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS
-      },
-      '/projects/*': {
-        allowedMethods: AllowedMethods.ALLOW_GET_HEAD,
-        cachePolicy: assetsCachePolicy,
-        origin: bucketOrigin,
+        origin: new OriginGroup({
+          fallbackOrigin: httpOrigin,
+          fallbackStatusCodes: [400, 403, 404, 416, 500, 502, 503, 504],
+          primaryOrigin: bucketOrigin
+        }),
         originRequestPolicy: OriginRequestPolicy.CORS_S3_ORIGIN,
         viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS
       }
